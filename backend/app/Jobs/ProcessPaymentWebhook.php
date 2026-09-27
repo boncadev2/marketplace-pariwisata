@@ -7,6 +7,7 @@ use App\Models\InventoryHold;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentWebhookEvent;
 use App\Services\InventoryReservationService;
+use App\Services\VoucherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -59,6 +60,9 @@ class ProcessPaymentWebhook implements ShouldQueue
                 $order->update(['status' => $allocated ? 'paid' : 'payment_exception']);
             }
             $event->update(['processed_at' => now()]);
+            if ($order->fresh()->status === 'paid') {
+                app(VoucherService::class)->issue($order);
+            }
         }, 3);
     }
 }

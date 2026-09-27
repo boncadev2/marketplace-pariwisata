@@ -1,5 +1,13 @@
 # Progress Implementasi
 
+## Fase 21 Voucher dan Validasi Kunjungan
+
+Status: sedang dikerjakan.
+
+Voucher diterbitkan idempoten per item setelah order paid dan inventory hold confirmed. Token acak disimpan terenkripsi, hash token dipakai untuk pencarian, dan token tidak disertakan pada serialisasi model. Redeem online mengunci order dan voucher, memeriksa membership mitra aktif, tanggal layanan (zona pilot Asia/Jakarta), status paid, dan hak masuk belum dipakai. Jumlah admission rombongan, petugas, dan waktu penggunaan tersimpan.
+
+Verifikasi: formatter lulus; test voucher dan regresi webhook lulus (10 test, 42 assertion). Masih diperlukan: QR, layar pemindai/fallback kode, cakupan peran dan lokasi petugas, audit override, serta uji scan serentak MySQL. Fase 21 belum selesai.
+
 ## Fase 20 Webhook Pembayaran
 
 Status: sedang dikerjakan. Endpoint sandbox telah memeriksa secret nonkosong, nominal, mata uang, dan kunci event unik. Pemrosesan event serta perubahan pembayaran/order berada dalam transaksi database. Pembayaran sukses tidak diturunkan oleh event gagal terlambat.

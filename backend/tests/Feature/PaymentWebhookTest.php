@@ -44,6 +44,7 @@ class PaymentWebhookTest extends TestCase
         (new ProcessPaymentWebhook($event->id))->handle();
 
         $this->assertSame('paid', $attempt->order->fresh()->status);
+        $this->assertDatabaseCount('vouchers', 1);
         $this->assertSame(1, InventoryBucket::firstOrFail()->confirmed);
         $this->assertSame(0, InventoryBucket::firstOrFail()->held);
     }
