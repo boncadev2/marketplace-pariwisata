@@ -21,6 +21,6 @@ class DestinationCatalogTest extends TestCase
         Destination::create(['partner_id' => $partner->id, 'region_id' => $region->id, 'category_id' => $category->id, 'name' => 'Terbit', 'slug' => 'terbit', 'publication_status' => 'published']);
         Destination::create(['partner_id' => $partner->id, 'region_id' => $region->id, 'category_id' => $category->id, 'name' => 'Draft', 'slug' => 'draft', 'publication_status' => 'draft']);
 
-        $this->getJson('/api/v1/destinations')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Terbit');
+        $this->getJson('/api/v1/destinations?region_id='.$region->id.'&category_id='.$category->id)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Terbit');
     }
 }

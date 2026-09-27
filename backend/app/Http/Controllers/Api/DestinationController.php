@@ -11,8 +11,8 @@ class DestinationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $data = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:50']]);
-        $destinations = Destination::query()->where('publication_status', 'published')->when(isset($data['q']), fn ($query) => $query->where('name', 'like', '%'.$data['q'].'%'))->orderBy('name')->paginate($data['per_page'] ?? 20);
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'region_id' => ['nullable', 'integer', 'exists:regions,id'], 'category_id' => ['nullable', 'integer', 'exists:categories,id'], 'page' => ['nullable', 'integer', 'min:1'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:50']]);
+        $destinations = Destination::query()->where('publication_status', 'published')->when(isset($data['q']), fn ($query) => $query->where('name', 'like', '%'.$data['q'].'%'))->when(isset($data['region_id']), fn ($query) => $query->where('region_id', $data['region_id']))->when(isset($data['category_id']), fn ($query) => $query->where('category_id', $data['category_id']))->orderBy('name')->paginate($data['per_page'] ?? 20);
 
         return response()->json(['data' => $destinations->items(), 'meta' => ['page' => $destinations->currentPage(), 'per_page' => $destinations->perPage(), 'total' => $destinations->total()]]);
     }
