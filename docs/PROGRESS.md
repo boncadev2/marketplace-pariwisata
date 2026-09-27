@@ -1,5 +1,20 @@
 # Progress Implementasi
 
+## Fase 16 Paket Wisata dan Itinerary
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Model paket yang terhubung ke produk dengan tipe keberangkatan, durasi, titik kumpul, transportasi, pemandu, fasilitas, harga, dan batas peserta.
+- Itinerary per hari/urutan dengan aktivitas berdurasi dan destinasi opsional.
+- Layanan publikasi yang menolak titik kumpul atau batas peserta tidak valid, itinerary kosong, aktivitas melampaui durasi, dan aktivitas yang bertumpang tindih.
+
+Verifikasi yang dijalankan:
+
+- `vendor/bin/pint --format agent` — lulus.
+- `php artisan test tests/Feature/TourPackageTest.php` — 2 test, 2 assertion lulus memakai SQLite di memori.
+
 ## Fase 15 Inventori Tiket dan Penahanan Kuota
 
 Status: selesai pada 28 September 2026.
