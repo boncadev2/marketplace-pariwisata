@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('media', function (Blueprint $table) {
             $table->id();
             $table->foreignId('partner_id')->nullable()->constrained()->nullOnDelete();
-            $table->morphs('mediable');
+            $table->nullableMorphs('mediable');
             $table->string('disk')->default('public');
             $table->string('path');
             $table->string('alt_text')->nullable();
