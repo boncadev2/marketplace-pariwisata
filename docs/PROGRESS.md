@@ -1,5 +1,21 @@
 # Progress Implementasi
 
+## Fase 15 Inventori Tiket dan Penahanan Kuota
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Bucket stok unik per produk, tanggal layanan, dan sesi dengan kapasitas, hold, konfirmasi, serta status penutupan tanggal.
+- Layanan reserve, confirm, release, dan pelepasan hold kedaluwarsa yang memakai transaksi dan locking konsisten.
+- Command scheduler `inventory:release-expired-holds` yang berjalan setiap menit serta kalender inventori publik.
+- Factory, migrasi, endpoint kalender, kontrak OpenAPI, dan dokumentasi API.
+
+Verifikasi yang dijalankan:
+
+- `vendor/bin/pint --format agent` — lulus.
+- `php artisan test tests/Feature/InventoryReservationTest.php tests/Feature/ProductQuoteTest.php` — 5 test, 14 assertion lulus memakai SQLite di memori.
+
 ## Fase 14 Aturan Harga Produk
 
 Status: implementasi siap diverifikasi pada 28 September 2026.

@@ -24,3 +24,9 @@ Parameter query wajib:
 - `quantity`: jumlah pembelian, bilangan bulat 1–100.
 
 Aturan harga aktif yang mencakup tanggal kunjungan dipilih berdasarkan `priority` tertinggi. Jika tidak ada aturan yang berlaku, sistem menggunakan `base_price` produk. Respons mengembalikan harga satuan dan `total` sebagai integer rupiah, bersama kode mata uang.
+
+## Kalender Inventori Produk
+
+`GET /api/v1/products/{slug}/inventory?from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+Menampilkan ketersediaan publik per tanggal dan sesi untuk produk berstatus `published`. Nilai `available` telah mengurangi kuota yang sedang ditahan dan sudah dikonfirmasi; tanggal yang ditutup selalu mengembalikan `available: 0`.

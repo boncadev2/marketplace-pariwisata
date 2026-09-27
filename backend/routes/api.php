@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DestinationController;
+use App\Http\Controllers\Api\InventoryHoldController;
 use App\Http\Controllers\Api\LookupController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartnerApplicationController;
@@ -19,6 +20,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
     Route::get('/destinations', [DestinationController::class, 'index']);
     Route::get('/products/{product:slug}/quote', [ProductQuoteController::class, 'show']);
+    Route::get('/products/{product:slug}/inventory', [InventoryHoldController::class, 'calendar']);
     Route::post('/partner-applications', [PartnerApplicationController::class, 'store'])->middleware('auth:sanctum');
     Route::post('/media', [MediaController::class, 'store'])->middleware('auth:sanctum');
 });
