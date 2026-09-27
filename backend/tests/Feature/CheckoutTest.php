@@ -28,5 +28,6 @@ class CheckoutTest extends TestCase
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('order_items', 1);
         $this->assertDatabaseCount('inventory_holds', 1);
+        $this->assertDatabaseCount('notification_deliveries', 1);
     }
 }

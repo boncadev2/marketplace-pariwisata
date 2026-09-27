@@ -31,6 +31,8 @@ class CheckoutService
             $order = Order::create(['public_id' => (string) Str::uuid(), 'partner_id' => $product->partner_id, 'idempotency_key' => $idempotencyKey, 'guest_access_hash' => Hash::make($guestToken), 'customer_name' => $name, 'customer_email' => $email, 'currency' => $quote['currency'], 'total' => $quote['total'], 'policy_snapshot' => ['visit_date' => $visitDate->toDateString()]]);
             $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString(), 'inventory_hold_id' => $hold->id]]);
 
+            app(TransactionOutbox::class)->record($order, 'awaiting_payment', 'created', 'Batas pembayaran: '.$hold->expires_at.'. Simpan kode akses dari checkout.');
+
             return [$order, $guestToken];
         });
     }

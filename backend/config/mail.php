@@ -36,6 +36,7 @@ return [
     */
 
     'mailers' => [
+        'mailpit' => ['transport' => 'smtp', 'host' => 'mailpit', 'port' => 1025, 'timeout' => 15],
 
         'smtp' => [
             'transport' => 'smtp',

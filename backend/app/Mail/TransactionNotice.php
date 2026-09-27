@@ -7,6 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 class TransactionNotice extends Mailable
@@ -27,7 +28,7 @@ class TransactionNotice extends Mailable
     ];
 
     /** @param array{order_id:string, name:string, detail:string} $snapshot */
-    public function __construct(public string $type, public array $snapshot)
+    public function __construct(public string $type, public array $snapshot, public ?string $messageKey = null)
     {
         if (! array_key_exists($type, self::TEMPLATES)) {
             throw new \InvalidArgumentException('Jenis notifikasi tidak dikenal.');
@@ -42,6 +43,11 @@ class TransactionNotice extends Mailable
         return new Envelope(
             subject: self::TEMPLATES[$this->type][0],
         );
+    }
+
+    public function headers(): Headers
+    {
+        return new Headers(messageId: $this->messageKey ? $this->messageKey.'@notifications.wisata.test' : null);
     }
 
     /**

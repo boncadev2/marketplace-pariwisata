@@ -7,6 +7,7 @@ use App\Models\InventoryHold;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentWebhookEvent;
 use App\Services\InventoryReservationService;
+use App\Services\TransactionOutbox;
 use App\Services\VoucherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -62,6 +63,8 @@ class ProcessPaymentWebhook implements ShouldQueue
             $event->update(['processed_at' => now()]);
             if ($order->fresh()->status === 'paid') {
                 app(VoucherService::class)->issue($order);
+                app(TransactionOutbox::class)->record($order, 'confirmation', 'paid', 'Status pembayaran: berhasil.');
+                app(TransactionOutbox::class)->record($order, 'voucher', 'issued', 'Gunakan nomor pesanan dan kode akses yang disimpan saat checkout.');
             }
         }, 3);
     }

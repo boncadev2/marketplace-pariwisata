@@ -38,3 +38,13 @@ Akun petugas fixture: `petugas.demo@example.test`, password `DemoPetugas2026!`. 
 ## Backup dan Restore
 
 Backup database, restore, dan prosedur insiden akan dirinci pada Fase 32. Sebelum fase tersebut, volume `mysql_data` hanya untuk pengembangan dan tidak dianggap sebagai backup.
+
+## Outbox Notifikasi Transaksi
+
+- Checkout menyimpan `awaiting_payment`; webhook paid menyimpan `confirmation` dan `voucher` dalam transaksi order yang sama. Tidak ada SMTP/dispatch pada transaksi order.
+- Scheduler menjalankan `notifications:dispatch-outbox` setiap menit; worker memakai claim database untuk menolak job duplikat. Recipient dan snapshot terenkripsi; queue hanya membawa ID delivery.
+- Lokal selalu memakai mailer `mailpit` (host Compose `mailpit:1025`). Produksi tidak mengantrekan/mengirim sampai `TRANSACTION_NOTICES_ENABLED=true` dan provider disetujui/configured. Jangan mengaktifkannya hanya untuk preview.
+- Lihat 50 delivery terakhir tanpa mengirim: `docker compose exec -T backend php artisan notifications:dispatch-outbox --inspect`. Output tidak memuat alamat email atau snapshot pelanggan.
+- Kegagalan dicoba ulang setelah 1 lalu 2 menit, maksimal 3 percobaan, kemudian `failed`. Pengiriman yang masih `sending` lebih dari 5 menit ditandai `uncertain`, bukan dikirim ulang otomatis. Periksa provider sebelum tindakan manual.
+- Status `sent` berarti transport menerima pesan, bukan bukti diterima pelanggan. Message-ID stabil membantu pelacakan; SMTP tidak menjamin exactly-once jika koneksi putus setelah penerimaan. Retry terbatas masih dapat menghasilkan duplikat pada kasus ambigu; sebelum produksi diperlukan kebijakan/provider idempotensi yang disetujui.
+- Template expiry, perubahan jadwal, pembatalan dan refund tersedia, tetapi integrasi pemicunya menunggu implementasi workflow terkait. WhatsApp nonaktif.

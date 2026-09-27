@@ -24,3 +24,4 @@ Artisan::command('payments:recover-webhooks', function (): void {
 })->purpose('Requeue durable payment events that have not been processed');
 
 Schedule::command('payments:recover-webhooks')->everyMinute()->withoutOverlapping();
+Schedule::command('notifications:dispatch-outbox')->everyMinute()->withoutOverlapping();

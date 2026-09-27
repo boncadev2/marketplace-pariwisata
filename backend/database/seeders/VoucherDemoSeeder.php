@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Region;
 use App\Models\User;
 use App\Services\InventoryReservationService;
+use App\Services\TransactionOutbox;
 use App\Services\VoucherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -30,7 +31,9 @@ class VoucherDemoSeeder extends Seeder
         $product = Product::firstOrCreate(['slug' => 'demo-checkin-ticket'], ['partner_id' => $partner->id, 'name' => 'Tiket demonstrasi check-in', 'type' => 'ticket', 'status' => 'published', 'base_price' => 100]);
         $date = now('Asia/Jakarta')->toDateString();
         $key = 'demo-checkin-'.$date;
-        if (Order::where('idempotency_key', $key)->exists()) {
+        if ($existing = Order::where('idempotency_key', $key)->first()) {
+            app(TransactionOutbox::class)->record($existing, 'confirmation', 'demo-paid', 'DEMONSTRASI — Email lokal Mailpit saja. Pembayaran sandbox berhasil.');
+
             return;
         }
         DB::transaction(function () use ($partner, $product, $date, $key): void {
@@ -41,6 +44,7 @@ class VoucherDemoSeeder extends Seeder
             $order = Order::create(['public_id' => 'demo-checkin-'.$date, 'partner_id' => $partner->id, 'idempotency_key' => $key, 'guest_access_hash' => Hash::make(str_repeat('g', 48)), 'customer_name' => 'Pelanggan demonstrasi', 'customer_email' => 'pelanggan.demo@example.test', 'status' => 'paid', 'currency' => 'IDR', 'total' => 100, 'policy_snapshot' => ['demo' => true]]);
             $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => 1, 'unit_price' => 100, 'total' => 100, 'snapshot' => ['inventory_hold_id' => $hold->id, 'visit_date' => $date, 'demo' => true]]);
             app(VoucherService::class)->issue($order);
+            app(TransactionOutbox::class)->record($order, 'confirmation', 'demo-paid', 'DEMONSTRASI — Email lokal Mailpit saja. Pembayaran sandbox berhasil.');
         });
     }
 }

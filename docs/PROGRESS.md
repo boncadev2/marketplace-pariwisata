@@ -2,11 +2,15 @@
 
 ## Fase 22 Notifikasi dan Komunikasi Transaksi
 
-Status: sedang dikerjakan — fondasi template/preview.
+Status: sedang dikerjakan — template, outbox dan pemicu transaksi utama tervalidasi lokal.
+
+Lanjutan outbox 28 September: tabel `notification_deliveries` menyimpan deduplication key unik, recipient/snapshot terenkripsi, status, jumlah percobaan, timestamp dan delivery log tanpa pesan error sensitif. Checkout mencatat awaiting_payment; webhook paid mencatat confirmation/voucher dalam transaksi order, tanpa SMTP atau dispatch di dalam transaksi. Poller terjadwal mengantrekan ID saja; worker memakai claim row untuk mencegah duplicate send sesudah acceptance, maksimal 3 percobaan dengan jeda 1/2 menit, terminal failed. Sending yang terputus lebih dari 5 menit menjadi uncertain dan tidak otomatis diulang. Inspeksi metadata tersedia melalui `notifications:dispatch-outbox --inspect`.
+
+Verifikasi: migrasi tambahan MySQL berhasil tanpa reset; fixture local-only dikirim lewat worker dan terlihat di browser Mailpit, status sent dengan 1 attempt. Duplicate job berikutnya selesai tanpa pengiriman tambahan. Suite penuh SQLite in-memory: 58 test, 205 assertion lulus; 3 test concurrency MySQL skipped. Skill testing-best-practices digunakan untuk rollback, retry/provider failure, deduplication, encryption dan batas produksi. Formatter dan diff check lulus. Produksi nonaktif secara default, pengiriman lokal dipaksa ke Mailpit. SMTP acceptance bukan bukti delivered/exactly-once; retry pada kegagalan ambigu masih bisa menggandakan pesan maksimal 3 kali. Integrasi workflow expiry/jadwal/cancel/refund dan validasi provider produksi masih terbuka, sehingga Fase 22 belum dinyatakan selesai seluruhnya.
 
 Tujuh template email tersedia: konfirmasi, menunggu bayar, kedaluwarsa, voucher, perubahan jadwal, pembatalan dan refund. Preview `/dev/notifications/{type}` menggunakan fixture tetap tanpa akses order pelanggan atau pengiriman email; hanya local/testing, private/no-store, tipe tak dikenal ditolak. Blade meng-escape data pelanggan. Preview voucher diperiksa langsung di browser dan visualnya lulus. Pengujian template, escaping dan pembatasan environment: 11 test, 56 assertion lulus. Implementasi memakai rendering Mailable sesuai dokumentasi resmi Laravel 13 (https://laravel.com/framework/docs/13.x/mail).
 
-Belum selesai: transactional outbox/enqueue setelah commit, delivery log, deduplication key, retry/failed jobs, integrasi perubahan status order dan uji provider email mati. Tidak ada email pelanggan nyata yang dikirim. WhatsApp belum diaktifkan.
+Belum selesai: integrasi pemicu expiry, perubahan jadwal, pembatalan dan refund saat workflow-nya tersedia, serta validasi provider produksi. Outbox, delivery log, deduplikasi, batas retry dan uji provider mati telah diimplementasikan pada lanjutan di atas. Tidak ada email pelanggan nyata yang dikirim. WhatsApp belum diaktifkan.
 
 ## Fase 21 Voucher dan Validasi Kunjungan
 

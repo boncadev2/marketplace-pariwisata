@@ -76,6 +76,7 @@ class PaymentWebhookTest extends TestCase
         $this->postJson('/api/v1/webhooks/payments/sandbox', array_replace($payload, ['event_key' => 'failure-2', 'status' => 'failed']), $headers)->assertOk();
 
         $this->assertDatabaseCount('payment_webhook_events', 2);
+        $this->assertDatabaseCount('notification_deliveries', 2);
         $this->assertSame('succeeded', $attempt->fresh()->status);
         $this->assertSame('paid', $attempt->order->fresh()->status);
     }
