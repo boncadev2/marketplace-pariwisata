@@ -15,6 +15,18 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/v1/me')->assertUnauthorized();
     }
 
+    public function test_valid_login_authenticates_session_and_logout_revokes_it(): void
+    {
+        $user = User::factory()->create(['email' => 'staff@example.test', 'password' => 'staff-password-123']);
+        $this->withHeaders(['Origin' => 'http://localhost:3000', 'Referer' => 'http://localhost:3000/login']);
+
+        $this->postJson('/api/v1/login', ['email' => 'staff@example.test', 'password' => 'staff-password-123'])->assertOk();
+        $this->assertAuthenticatedAs($user, 'web');
+        $this->getJson('/api/v1/me')->assertOk()->assertJsonPath('data.id', $user->id);
+        $this->postJson('/api/v1/logout')->assertNoContent();
+        $this->assertGuest('web');
+    }
+
     public function test_registration_requires_strong_confirmed_password(): void
     {
         $this->postJson('/api/v1/register', ['name' => 'Demo', 'email' => 'demo@example.test', 'password' => 'short', 'password_confirmation' => 'short'])->assertUnprocessable();

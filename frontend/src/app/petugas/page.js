@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Shell } from "../../components/Shell";
+import { apiRequest } from "../../lib/api";
 
 export default function StaffPage() {
   const [token, setToken] = useState("");
@@ -46,42 +47,10 @@ export default function StaffPage() {
     setBusy(true);
     setMessage("");
     try {
-      const api = (
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
-      ).replace(/\/$/, "");
-      const csrf = await fetch(
-        `${api.replace(/\/api\/v1$/, "")}/sanctum/csrf-cookie`,
-        { credentials: "include" }
-      );
-      if (!csrf.ok) throw new Error("Tidak dapat menyiapkan sesi petugas.");
-      const cookie = document.cookie
-        .split("; ")
-        .find((entry) => entry.startsWith("XSRF-TOKEN="));
-      const response = await fetch(`${api}/staff/vouchers/redeem`, {
+      const result = await apiRequest("/staff/vouchers/redeem", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...(cookie
-            ? { "X-XSRF-TOKEN": decodeURIComponent(cookie.slice(11)) }
-            : {}),
-        },
         body: JSON.stringify({ token: token.trim() }),
       });
-      const result = await response.json();
-      if (!response.ok) {
-        const errors = {
-          401: "Masuk dengan akun petugas terlebih dahulu.",
-          404: "Voucher tidak ditemukan atau bukan milik mitra Anda.",
-          409: "Voucher sudah digunakan, tanggal tidak sesuai, atau pesanan tidak aktif.",
-          419: "Sesi kedaluwarsa. Silakan masuk kembali.",
-        };
-        throw new Error(
-          errors[response.status] ||
-            "Validasi gagal. Periksa kode dan coba kembali."
-        );
-      }
       setMessage(
         `Kunjungan tervalidasi untuk ${result.data.used_admissions} peserta.`
       );

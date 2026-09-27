@@ -10,6 +10,8 @@ Verifikasi: formatter lulus; test voucher dan regresi webhook lulus (10 test, 42
 
 Lanjutan: redeem dibatasi membership aktif dengan role owner/manager/staff. Test viewer ditolak lulus; suite voucher 4 test, 12 assertion. Uji MySQL dua scanner serentak menghasilkan tepat satu redeem (suite concurrency 3 test, 19 assertion). Layar JavaScript `/petugas` menyediakan input kode dan pembacaan QR dari foto pada browser yang mendukung BarcodeDetector; lint/build frontend lulus. Kamera/perangkat nyata dan login petugas end-to-end belum diuji. Masih diperlukan penerbitan gambar QR, pembatasan lokasi, serta audit override sebelum fase dinyatakan selesai.
 
+Lanjutan QR/login: login Laravel kini mengautentikasi guard web dan logout mencabut sesi; form login terhubung ke API. Next.js mem-proxy API/Sanctum ke backend internal untuk cookie dan CSRF satu origin. Halaman `/voucher` membuat QR lokal memakai qrcode 1.5.4 dari token yang diterima setelah verifikasi kode akses tamu melalui header; respons private/no-store, order refund tidak mengembalikan voucher. Test autentikasi dan akses voucher: 7 test, 20 assertion lulus; lint/build frontend lulus. Backend runtime Compose belum dinyalakan sehingga alur browser penuh belum diuji. Pembatasan lokasi dan audit override masih terbuka.
+
 ## Fase 20 Webhook Pembayaran
 
 Status: sedang dikerjakan. Endpoint sandbox telah memeriksa secret nonkosong, nominal, mata uang, dan kunci event unik. Pemrosesan event serta perubahan pembayaran/order berada dalam transaksi database. Pembayaran sukses tidak diturunkan oleh event gagal terlambat.

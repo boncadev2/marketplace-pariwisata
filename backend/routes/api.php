@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DestinationController;
+use App\Http\Controllers\Api\GuestVoucherController;
 use App\Http\Controllers\Api\InventoryHoldController;
 use App\Http\Controllers\Api\LookupController;
 use App\Http\Controllers\Api\MediaController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\VoucherRedemptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    Route::get('/guest/orders/{publicId}/vouchers', [GuestVoucherController::class, 'show'])->middleware('throttle:10,1');
     Route::post('/staff/vouchers/redeem', [VoucherRedemptionController::class, 'store'])->middleware(['auth:sanctum', 'throttle:30,1']);
     Route::post('/webhooks/payments/sandbox', [PaymentWebhookController::class, 'store']);
     Route::post('/checkout', [CheckoutController::class, 'store']);
