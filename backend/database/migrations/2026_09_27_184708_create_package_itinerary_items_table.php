@@ -21,7 +21,7 @@ return new class extends Migration
             $table->time('starts_at');
             $table->unsignedSmallInteger('duration_minutes');
             $table->text('description')->nullable();
-            $table->unique(['tour_package_id', 'day_number', 'sequence']);
+            $table->unique(['tour_package_id', 'day_number', 'sequence'], 'itinerary_package_day_sequence_unique');
             $table->timestamps();
         });
     }

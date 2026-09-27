@@ -10,7 +10,9 @@ Checkout kini membuat hold 15 menit. Webhook mengonfirmasi hold dalam transaksi,
 
 Pemrosesan dipindahkan ke job `ProcessPaymentWebhook` dengan retry dan pemeriksaan event di dalam transaksi. Command terjadwal `payments:recover-webhooks` mengantrekan kembali event belum diproses, termasuk ketika dispatch awal gagal. Test membuktikan event tersimpan sebelum worker, retry tidak menggandakan kuota, dan recovery mengantrekan event kembali.
 
-Masih diperlukan: uji concurrency pada MySQL. Fase 20 belum dinyatakan selesai; hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
+Uji MySQL 8.4 terisolasi berhasil: seluruh migrasi berjalan; dua proses PHP serentak berebut satu kursi menghasilkan tepat satu reservasi dan satu penolakan (1 test, 6 assertion). Nama indeks unik itinerary diperpendek agar sesuai batas MySQL. Database test memakai tmpfs dan tidak memakai volume aplikasi.
+
+Fase 20 masih memerlukan cakupan race expiry-versus-paid pada MySQL sebelum dinyatakan selesai. Hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
 
 ## Fase 18 Checkout dan Pesanan Tamu
 
