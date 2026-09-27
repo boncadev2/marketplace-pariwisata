@@ -3,9 +3,13 @@
 use App\Exceptions\InventoryUnavailableException;
 use App\Jobs\ProcessPaymentWebhook;
 use App\Models\InventoryBucket;
+use App\Models\User;
+use App\Models\Voucher;
 use App\Services\InventoryReservationService;
+use App\Services\VoucherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
@@ -23,6 +27,20 @@ if (($argv[3] ?? 'reserve') === 'paid') {
 if (($argv[3] ?? 'reserve') === 'expire') {
     app(InventoryReservationService::class)->releaseExpired();
     echo 'expired';
+    exit;
+}
+if (($argv[3] ?? 'reserve') === 'redeem') {
+    try {
+        $voucher = Voucher::findOrFail((int) $argv[1]);
+        $staff = User::findOrFail((int) $argv[4]);
+        app(VoucherService::class)->redeem($voucher->token, $staff);
+        echo 'redeemed';
+    } catch (HttpException $exception) {
+        if ($exception->getStatusCode() !== 409) {
+            throw $exception;
+        }
+        echo 'already_used';
+    }
     exit;
 }
 

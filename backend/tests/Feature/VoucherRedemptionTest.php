@@ -48,6 +48,16 @@ class VoucherRedemptionTest extends TestCase
         $this->assertSame(0, $voucher->fresh()->used_admissions);
     }
 
+    public function test_member_without_staff_role_cannot_redeem(): void
+    {
+        [$voucher, $staff] = $this->voucher();
+        PartnerMember::where('user_id', $staff->id)->update(['role' => 'viewer']);
+
+        $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48)])->assertNotFound();
+
+        $this->assertSame(0, $voucher->fresh()->used_admissions);
+    }
+
     private function voucher(): array
     {
         $this->freezeTime();

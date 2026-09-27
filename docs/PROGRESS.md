@@ -8,6 +8,8 @@ Voucher diterbitkan idempoten per item setelah order paid dan inventory hold con
 
 Verifikasi: formatter lulus; test voucher dan regresi webhook lulus (10 test, 42 assertion). Masih diperlukan: QR, layar pemindai/fallback kode, cakupan peran dan lokasi petugas, audit override, serta uji scan serentak MySQL. Fase 21 belum selesai.
 
+Lanjutan: redeem dibatasi membership aktif dengan role owner/manager/staff. Test viewer ditolak lulus; suite voucher 4 test, 12 assertion. Uji MySQL dua scanner serentak menghasilkan tepat satu redeem (suite concurrency 3 test, 19 assertion). Layar JavaScript `/petugas` menyediakan input kode dan pembacaan QR dari foto pada browser yang mendukung BarcodeDetector; lint/build frontend lulus. Kamera/perangkat nyata dan login petugas end-to-end belum diuji. Masih diperlukan penerbitan gambar QR, pembatasan lokasi, serta audit override sebelum fase dinyatakan selesai.
+
 ## Fase 20 Webhook Pembayaran
 
 Status: sedang dikerjakan. Endpoint sandbox telah memeriksa secret nonkosong, nominal, mata uang, dan kunci event unik. Pemrosesan event serta perubahan pembayaran/order berada dalam transaksi database. Pembayaran sukses tidak diturunkan oleh event gagal terlambat.

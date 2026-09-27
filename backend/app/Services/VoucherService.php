@@ -37,7 +37,7 @@ class VoucherService
     {
         return DB::transaction(function () use ($token, $staff): Voucher {
             $voucher = Voucher::where('token_hash', hash('sha256', $token))->firstOrFail();
-            abort_unless($staff->partnerMemberships()->where('partner_id', $voucher->partner_id)->where('is_active', true)->exists(), 404);
+            abort_unless($staff->partnerMemberships()->where('partner_id', $voucher->partner_id)->where('is_active', true)->whereIn('role', ['owner', 'manager', 'staff'])->exists(), 404);
             $item = OrderItem::findOrFail($voucher->order_item_id);
             $order = Order::query()->lockForUpdate()->findOrFail($item->order_id);
             $voucher = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
