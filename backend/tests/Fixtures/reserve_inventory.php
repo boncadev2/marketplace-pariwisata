@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\InventoryUnavailableException;
+use App\Jobs\ProcessPaymentWebhook;
 use App\Models\InventoryBucket;
 use App\Services\InventoryReservationService;
 use Carbon\CarbonImmutable;
@@ -12,6 +13,17 @@ $app->make(Kernel::class)->bootstrap();
 $start = (float) $argv[2];
 while (microtime(true) < $start) {
     usleep(1000);
+}
+
+if (($argv[3] ?? 'reserve') === 'paid') {
+    (new ProcessPaymentWebhook((int) $argv[1]))->handle();
+    echo 'processed';
+    exit;
+}
+if (($argv[3] ?? 'reserve') === 'expire') {
+    app(InventoryReservationService::class)->releaseExpired();
+    echo 'expired';
+    exit;
 }
 
 try {

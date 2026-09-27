@@ -12,7 +12,7 @@ Pemrosesan dipindahkan ke job `ProcessPaymentWebhook` dengan retry dan pemeriksa
 
 Uji MySQL 8.4 terisolasi berhasil: seluruh migrasi berjalan; dua proses PHP serentak berebut satu kursi menghasilkan tepat satu reservasi dan satu penolakan (1 test, 6 assertion). Nama indeks unik itinerary diperpendek agar sesuai batas MySQL. Database test memakai tmpfs dan tidak memakai volume aplikasi.
 
-Fase 20 masih memerlukan cakupan race expiry-versus-paid pada MySQL sebelum dinyatakan selesai. Hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
+Uji race expiry-versus-paid MySQL berhasil: order paid, hold lama expired, satu alokasi confirmed, held nol. Bersama uji kuota terakhir: 2 test, 14 assertion lulus. Implementasi sandbox Fase 20 tervalidasi untuk skenario yang dicakup; integrasi provider nyata tetap memerlukan kontrak signature/merchant dari provider yang dipilih. Hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
 
 ## Fase 18 Checkout dan Pesanan Tamu
 
