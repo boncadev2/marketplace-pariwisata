@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\Destination;
 use App\Models\Order;
 use App\Models\Partner;
 use App\Models\PartnerMember;
@@ -56,6 +58,41 @@ class VoucherRedemptionTest extends TestCase
         $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48)])->assertNotFound();
 
         $this->assertSame(0, $voucher->fresh()->used_admissions);
+    }
+
+    public function test_staff_without_assignment_to_product_destination_is_rejected(): void
+    {
+        [$voucher, $staff] = $this->voucher();
+        $product = Product::firstOrFail();
+        $category = Category::create(['name' => 'Test', 'slug' => 'location-test']);
+        $destination = Destination::create(['partner_id' => $product->partner_id, 'region_id' => Region::firstOrFail()->id, 'category_id' => $category->id, 'name' => 'Lokasi', 'slug' => 'location-test']);
+        $product->update(['destination_id' => $destination->id]);
+
+        $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48)])->assertNotFound();
+
+        $this->assertSame(0, $voucher->fresh()->used_admissions);
+        $this->assertDatabaseCount('voucher_check_ins', 0);
+    }
+
+    public function test_admin_date_override_records_reason_and_actor(): void
+    {
+        [$voucher, $staff] = $this->voucher();
+        $staff->forceFill(['platform_role' => 'super_admin'])->save();
+        $voucher->update(['service_date' => now()->subDay()->toDateString()]);
+
+        $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48), 'override_reason' => 'Jadwal dipindahkan oleh pengelola.'])->assertOk();
+
+        $this->assertDatabaseHas('voucher_check_ins', ['voucher_id' => $voucher->id, 'user_id' => $staff->id, 'admissions' => 2, 'override_reason' => 'Jadwal dipindahkan oleh pengelola.']);
+    }
+
+    public function test_staff_cannot_request_admin_override(): void
+    {
+        [$voucher, $staff] = $this->voucher();
+
+        $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48), 'override_reason' => 'Meminta pengecualian tanggal.'])->assertForbidden();
+
+        $this->assertSame(0, $voucher->fresh()->used_admissions);
+        $this->assertDatabaseCount('voucher_check_ins', 0);
     }
 
     private function voucher(): array

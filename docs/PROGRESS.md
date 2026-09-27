@@ -12,6 +12,8 @@ Lanjutan: redeem dibatasi membership aktif dengan role owner/manager/staff. Test
 
 Lanjutan QR/login: login Laravel kini mengautentikasi guard web dan logout mencabut sesi; form login terhubung ke API. Next.js mem-proxy API/Sanctum ke backend internal untuk cookie dan CSRF satu origin. Halaman `/voucher` membuat QR lokal memakai qrcode 1.5.4 dari token yang diterima setelah verifikasi kode akses tamu melalui header; respons private/no-store, order refund tidak mengembalikan voucher. Test autentikasi dan akses voucher: 7 test, 20 assertion lulus; lint/build frontend lulus. Backend runtime Compose belum dinyalakan sehingga alur browser penuh belum diuji. Pembatasan lokasi dan audit override masih terbuka.
 
+Lanjutan lokasi/audit: membership memiliki assignment destinasi; staff pada produk berlokasi hanya dapat redeem pada destinasi yang ditugaskan, sedangkan owner/manager mempunyai cakupan lokasi mitra. Log check-in unik per voucher mencatat actor, admission, waktu, dan alasan override. Super admin dapat melakukan override tanggal dengan alasan wajib minimal 10 karakter; order tetap harus paid dan voucher active. Test lokasi, penolakan override staff, audit admin, dan regresi webhook: 14 test, 52 assertion lulus. Pengujian alur penuh di browser masih terbuka sebelum fase dinyatakan selesai.
+
 ## Fase 20 Webhook Pembayaran
 
 Status: sedang dikerjakan. Endpoint sandbox telah memeriksa secret nonkosong, nominal, mata uang, dan kunci event unik. Pemrosesan event serta perubahan pembayaran/order berada dalam transaksi database. Pembayaran sukses tidak diturunkan oleh event gagal terlambat.
