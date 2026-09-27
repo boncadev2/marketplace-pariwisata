@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -41,5 +42,23 @@ class AuthController extends Controller
     public function profile(Request $request): JsonResponse
     {
         return response()->json(['data' => $request->user()]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+        Password::sendResetLink(['email' => mb_strtolower($data['email'])]);
+
+        return response()->json(['message' => 'Jika akun tersedia, instruksi reset telah dikirim.']);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate(['token' => ['required', 'string'], 'email' => ['required', 'email'], 'password' => ['required', 'string', 'min:12', 'confirmed']]);
+        $status = Password::reset($data, function (User $user, string $password): void {
+            $user->forceFill(['password' => $password])->save();
+        });
+
+        return $status === Password::PASSWORD_RESET ? response()->json(['message' => 'Kata sandi berhasil diubah.']) : response()->json(['message' => 'Token reset tidak valid atau kedaluwarsa.'], 422);
     }
 }
