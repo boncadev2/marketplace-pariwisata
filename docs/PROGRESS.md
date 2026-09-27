@@ -1,5 +1,19 @@
 # Progress Implementasi
 
+## Fase 18 Checkout dan Pesanan Tamu
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Endpoint checkout satu produk/satu mitra dengan tanggal layanan, kontak pelanggan, total yang dihitung server, dan snapshot order.
+- Kunci idempoten wajib untuk mencegah pesanan ganda serta token akses tamu yang hanya dikembalikan saat pembuatan pertama.
+
+Verifikasi yang dijalankan:
+
+- `vendor/bin/pint --format agent` — lulus.
+- `php artisan test tests/Feature/CheckoutTest.php` — 1 test, 6 assertion lulus memakai SQLite di memori.
+
 ## Fase 17 Keberangkatan dan Operasional Paket
 
 Status: selesai pada 28 September 2026.
