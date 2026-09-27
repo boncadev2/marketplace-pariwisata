@@ -24,7 +24,7 @@ export function Shell({ children }) {
             </Link>
           ))}
         </nav>
-        <Link className="account-link" href="/akun">
+        <Link className="account-link" href="/login">
           Akun
         </Link>
       </header>
