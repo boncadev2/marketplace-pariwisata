@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Request;
 
 class MediaController extends Controller
 {
