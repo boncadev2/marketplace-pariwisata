@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Wisata Daerah API
+  version: 0.1.0
+  description: Kontrak awal Fase 03. Endpoint bisnis ditambahkan bertahap sesuai fase domain.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      summary: Status API versi 1
+      responses:
+        '200':
+          description: API siap menerima request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /destinations:
+    get:
+      summary: Daftar destinasi publik
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: Daftar terhalaman
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDestinations'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+components:
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PerPage: { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+  responses:
+    ValidationError:
+      description: Input tidak valid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+  schemas:
+    HealthResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { type: object, properties: { status: { type: string, example: ok } } }
+    Destination:
+      type: object
+      required: [id, name, slug, publication_status]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        publication_status: { type: string, enum: [published] }
+    PaginatedDestinations:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Destination' } }
+        meta: { type: object, properties: { page: { type: integer }, per_page: { type: integer }, total: { type: integer } } }
+    ErrorResponse:
+      type: object
+      required: [message, code]
+      properties:
+        message: { type: string }
+        code: { type: string, example: VALIDATION_ERROR }
+        errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
