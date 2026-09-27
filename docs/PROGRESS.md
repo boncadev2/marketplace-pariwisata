@@ -1,5 +1,13 @@
 # Progress Implementasi
 
+## Fase 22 Notifikasi dan Komunikasi Transaksi
+
+Status: sedang dikerjakan — fondasi template/preview.
+
+Tujuh template email tersedia: konfirmasi, menunggu bayar, kedaluwarsa, voucher, perubahan jadwal, pembatalan dan refund. Preview `/dev/notifications/{type}` menggunakan fixture tetap tanpa akses order pelanggan atau pengiriman email; hanya local/testing, private/no-store, tipe tak dikenal ditolak. Blade meng-escape data pelanggan. Preview voucher diperiksa langsung di browser dan visualnya lulus. Pengujian template, escaping dan pembatasan environment: 11 test, 56 assertion lulus. Implementasi memakai rendering Mailable sesuai dokumentasi resmi Laravel 13 (https://laravel.com/framework/docs/13.x/mail).
+
+Belum selesai: transactional outbox/enqueue setelah commit, delivery log, deduplication key, retry/failed jobs, integrasi perubahan status order dan uji provider email mati. Tidak ada email pelanggan nyata yang dikirim. WhatsApp belum diaktifkan.
+
 ## Fase 21 Voucher dan Validasi Kunjungan
 
 Status: sedang dikerjakan.
