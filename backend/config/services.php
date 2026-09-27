@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'sandbox_payment' => [
+        'webhook_secret' => env('SANDBOX_PAYMENT_WEBHOOK_SECRET'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

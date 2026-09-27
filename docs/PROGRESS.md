@@ -1,5 +1,13 @@
 # Progress Implementasi
 
+## Fase 20 Webhook Pembayaran
+
+Status: sedang dikerjakan. Endpoint sandbox telah memeriksa secret nonkosong, nominal, mata uang, dan kunci event unik. Pemrosesan event serta perubahan pembayaran/order berada dalam transaksi database. Pembayaran sukses tidak diturunkan oleh event gagal terlambat.
+
+Verifikasi: formatter lulus; `PaymentWebhookTest` lulus dengan 3 test dan 11 assertion menggunakan SQLite di memori.
+
+Masih diperlukan: hubungan checkout dengan inventory hold, konversi hold saat paid, recovery pembayaran terlambat, pemrosesan job durable, serta uji concurrency pada database produksi. Fase 20 belum dinyatakan selesai.
+
 ## Fase 18 Checkout dan Pesanan Tamu
 
 Status: selesai pada 28 September 2026.
