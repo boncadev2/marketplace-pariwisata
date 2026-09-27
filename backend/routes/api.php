@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LookupController;
+use App\Http\Controllers\Api\PartnerApplicationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -13,4 +14,5 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/me', [AuthController::class, 'profile'])->middleware('auth:sanctum');
     Route::get('/lookup/regions', [LookupController::class, 'regions']);
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
+    Route::post('/partner-applications', [PartnerApplicationController::class, 'store'])->middleware('auth:sanctum');
 });
