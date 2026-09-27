@@ -16,7 +16,7 @@ Rilis awal mencakup katalog destinasi, informasi wilayah dan desa, tiket, paket 
 - Queue dan cache: Redis
 - Autentikasi web: Sanctum dengan sesi cookie
 
-Stack diinisialisasi pada Fase 02. Runtime Docker menggunakan Node.js 24 dan PHP 8.3; lockfile frontend dan backend disimpan dalam repositori.
+Stack diinisialisasi pada Fase 02. Runtime Docker menggunakan Node.js 24 dan PHP 8.4; lockfile frontend dan backend disimpan dalam repositori.
 
 JavaScript dipilih secara eksplisit untuk frontend. Fase 02 tidak boleh menambahkan konfigurasi atau file TypeScript kecuali pengguna mengubah keputusan ini kembali.
 

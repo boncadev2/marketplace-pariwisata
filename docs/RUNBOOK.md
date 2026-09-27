@@ -4,7 +4,7 @@
 
 - Docker Desktop aktif.
 - Node.js 20.9 atau lebih baru untuk menjalankan frontend di host; proyek ini telah diverifikasi menggunakan Node.js 24.
-- Untuk menjalankan Laravel di host diperlukan PHP 8.3 atau lebih baru. Konfigurasi Docker menggunakan PHP 8.3 agar tidak bergantung pada PHP host.
+- Untuk menjalankan Laravel di host diperlukan PHP 8.4.1 atau lebih baru. Konfigurasi Docker menggunakan PHP 8.4 agar tidak bergantung pada PHP host.
 
 ## Menjalankan Lingkungan Lokal
 
