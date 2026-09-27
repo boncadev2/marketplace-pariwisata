@@ -34,6 +34,33 @@ paths:
                 $ref: '#/components/schemas/PaginatedDestinations'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /products/{slug}/quote:
+    get:
+      summary: Kutipan harga produk publik
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: visit_date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: quantity
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Kutipan harga untuk tanggal kunjungan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceQuoteResponse'
+        '404':
+          description: Produk tidak tersedia untuk publik
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   parameters:
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
@@ -71,3 +98,15 @@ components:
         message: { type: string }
         code: { type: string, example: VALIDATION_ERROR }
         errors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+    PriceQuoteResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [unit_price, currency, quantity, total]
+          properties:
+            unit_price: { type: integer, example: 75000 }
+            currency: { type: string, example: IDR }
+            quantity: { type: integer, example: 3 }
+            total: { type: integer, example: 225000 }

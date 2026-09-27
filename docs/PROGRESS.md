@@ -1,5 +1,20 @@
 # Progress Implementasi
 
+## Fase 14 Aturan Harga Produk
+
+Status: implementasi siap diverifikasi pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Tabel `product_price_rules` untuk harga berdasarkan rentang tanggal, prioritas, dan status aktif.
+- Layanan kutipan harga yang memilih aturan aktif dengan prioritas tertinggi dan memakai harga dasar sebagai fallback.
+- Endpoint publik `GET /api/v1/products/{slug}/quote` dengan validasi tanggal kunjungan dan kuantitas 1–100.
+- Kontrak OpenAPI, dokumentasi API, factory aturan harga, dan pengujian skenario prioritas/fallback.
+
+Verifikasi tertunda:
+
+- Formatter Laravel, migrasi, dan test fitur belum dapat dijalankan karena layanan eksekusi Docker pada akun saat ini menolak permintaan akibat batas kuota. Tidak ada hasil tes yang diklaim lulus sebelum layanan itu tersedia.
+
 ## Fase 03 Desain Antarmuka dan Kontrak API
 
 Status: selesai pada 27 September 2026.

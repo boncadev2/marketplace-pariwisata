@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\DestinationController;
 use App\Http\Controllers\Api\LookupController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PartnerApplicationController;
+use App\Http\Controllers\Api\ProductQuoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -17,6 +18,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/lookup/regions', [LookupController::class, 'regions']);
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
     Route::get('/destinations', [DestinationController::class, 'index']);
+    Route::get('/products/{product:slug}/quote', [ProductQuoteController::class, 'show']);
     Route::post('/partner-applications', [PartnerApplicationController::class, 'store'])->middleware('auth:sanctum');
     Route::post('/media', [MediaController::class, 'store'])->middleware('auth:sanctum');
 });
