@@ -1,5 +1,19 @@
 # Progress Implementasi
 
+## Fase 17 Keberangkatan dan Operasional Paket
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Departure paket dengan tanggal lokal, zona waktu, cutoff, kapasitas, status, penugasan pemandu, alasan pembatalan, dan manifest peserta.
+- Layanan booking instan yang mengunci departure dan hanya menerima status `guaranteed`, sebelum cutoff, dan selama kuota tersedia.
+
+Verifikasi yang dijalankan:
+
+- `vendor/bin/pint --format agent` — lulus.
+- `php artisan test tests/Feature/PackageDepartureTest.php` — 2 test, 2 assertion lulus memakai SQLite di memori.
+
 ## Fase 16 Paket Wisata dan Itinerary
 
 Status: selesai pada 28 September 2026.
