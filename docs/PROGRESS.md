@@ -8,7 +8,9 @@ Verifikasi: formatter lulus; `PaymentWebhookTest` lulus dengan 3 test dan 11 ass
 
 Checkout kini membuat hold 15 menit. Webhook mengonfirmasi hold dalam transaksi, mencoba alokasi ulang jika hold kedaluwarsa, dan menandai `payment_exception` jika kuota tidak tersedia. Urutan locking inventori diseragamkan: bucket lalu hold.
 
-Verifikasi integrasi: 9 test dan 34 assertion lulus pada webhook, checkout, dan inventori. Masih diperlukan: pemrosesan job durable serta uji concurrency pada MySQL. Fase 20 belum dinyatakan selesai.
+Pemrosesan dipindahkan ke job `ProcessPaymentWebhook` dengan retry dan pemeriksaan event di dalam transaksi. Command terjadwal `payments:recover-webhooks` mengantrekan kembali event belum diproses, termasuk ketika dispatch awal gagal. Test membuktikan event tersimpan sebelum worker, retry tidak menggandakan kuota, dan recovery mengantrekan event kembali.
+
+Masih diperlukan: uji concurrency pada MySQL. Fase 20 belum dinyatakan selesai; hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
 
 ## Fase 18 Checkout dan Pesanan Tamu
 

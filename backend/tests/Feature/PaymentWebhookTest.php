@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessPaymentWebhook;
 use App\Models\InventoryBucket;
 use App\Models\InventoryHold;
 use App\Models\Order;
 use App\Models\Partner;
 use App\Models\PaymentAttempt;
+use App\Models\PaymentWebhookEvent;
 use App\Models\Product;
 use App\Models\Region;
 use App\Services\InventoryReservationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class PaymentWebhookTest extends TestCase
@@ -23,6 +26,39 @@ class PaymentWebhookTest extends TestCase
         config(['services.sandbox_payment.webhook_secret' => null]);
         $this->postJson('/api/v1/webhooks/payments/sandbox', [])->assertUnauthorized();
         $this->assertDatabaseCount('payment_webhook_events', 0);
+    }
+
+    public function test_event_is_durable_before_worker_processes_it_and_retry_is_idempotent(): void
+    {
+        $attempt = $this->attempt();
+        Queue::fake([ProcessPaymentWebhook::class]);
+
+        $this->postJson('/api/v1/webhooks/payments/sandbox', ['event_key' => 'queued-1', 'provider_reference' => 'sandbox-test', 'status' => 'succeeded', 'amount' => 125000, 'currency' => 'IDR'], ['X-Sandbox-Signature' => 'test-secret'])->assertOk();
+
+        $event = PaymentWebhookEvent::firstOrFail();
+        Queue::assertPushed(ProcessPaymentWebhook::class, fn ($job) => $job->eventId === $event->id);
+        $this->assertNull($event->processed_at);
+        $this->assertSame('pending_payment', $attempt->order->fresh()->status);
+
+        (new ProcessPaymentWebhook($event->id))->handle();
+        (new ProcessPaymentWebhook($event->id))->handle();
+
+        $this->assertSame('paid', $attempt->order->fresh()->status);
+        $this->assertSame(1, InventoryBucket::firstOrFail()->confirmed);
+        $this->assertSame(0, InventoryBucket::firstOrFail()->held);
+    }
+
+    public function test_recovery_requeues_unprocessed_event(): void
+    {
+        $attempt = $this->attempt();
+        $this->freezeTime();
+        $event = PaymentWebhookEvent::create(['provider' => 'sandbox', 'provider_event_key' => 'recover-1', 'payment_attempt_id' => $attempt->id, 'payload' => ['event_key' => 'recover-1', 'provider_reference' => 'sandbox-test', 'status' => 'succeeded', 'amount' => 125000, 'currency' => 'IDR'], 'created_at' => now()->subMinutes(2)]);
+        Queue::fake([ProcessPaymentWebhook::class]);
+
+        $this->artisan('payments:recover-webhooks')->assertSuccessful();
+
+        Queue::assertPushed(ProcessPaymentWebhook::class, fn ($job) => $job->eventId === $event->id);
+        $this->assertSame('pending_payment', $attempt->order->fresh()->status);
     }
 
     public function test_duplicate_success_and_late_failure_keep_payment_succeeded(): void
