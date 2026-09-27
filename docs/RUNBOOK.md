@@ -17,13 +17,23 @@
 ## Pemeriksaan Dasar
 
 - Frontend: `cd frontend && npm run lint && npm run build`
-- Backend: `docker compose exec backend php artisan test`
+- Backend: `docker compose exec -T -e APP_ENV=testing -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: -e CACHE_STORE=array -e QUEUE_CONNECTION=sync -e SESSION_DRIVER=array backend php artisan test`. Semua override ini wajib: environment Compose dapat mengalahkan default `phpunit.xml`. Jangan jalankan suite RefreshDatabase pada database aplikasi.
 - Status layanan: `docker compose ps`
 - Health check: `curl -f http://localhost:8000/up`
 
 ## Konfigurasi Lingkungan
 
 Gunakan file `.env` lokal untuk nilai yang berubah antar lingkungan. Jangan masukkan key provider, password produksi, atau data pribadi ke Git. Nilai pada `.env.example` hanyalah placeholder pengembangan.
+
+Server pengembangan Compose memakai `artisan serve --no-reload` agar environment Docker (terutama MySQL) diteruskan ke proses HTTP. Setelah mengubah environment, recreate backend/worker. Image backend memasang ekstensi Redis untuk cache dan queue.
+
+Layanan `scheduler` menjalankan `schedule:work` untuk expiry inventory dan recovery webhook setiap menit. Pastikan worker dan scheduler hidup bersama backend; periksa `docker compose logs worker scheduler` jika event tertunda.
+
+## Demonstrasi Voucher Lokal
+
+Jalankan `docker compose exec -T backend php artisan db:seed --class=VoucherDemoSeeder`. Seeder hanya berjalan di environment local, tidak menghapus data, dan membuat satu order demonstrasi per tanggal Asia/Jakarta.
+
+Akun petugas fixture: `petugas.demo@example.test`, password `DemoPetugas2026!`. Order demo: `demo-checkin-YYYY-MM-DD`; kode akses tamu adalah huruf `g` sebanyak 48 karakter. Gunakan `/voucher` untuk QR dan `/petugas` untuk redeem. Ini bukan akun atau transaksi produksi; voucher hanya dapat digunakan satu kali.
 
 ## Backup dan Restore
 

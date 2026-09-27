@@ -28,7 +28,11 @@ class PaymentWebhookController extends Controller
             $order = $attempt->order()->lockForUpdate()->firstOrFail();
             abort_unless((int) $attempt->amount === $data['amount'] && $attempt->currency === $data['currency'] && (int) $order->total === $data['amount'] && $order->currency === $data['currency'], 409, 'Nominal atau mata uang pembayaran tidak cocok.');
             $event = PaymentWebhookEvent::firstOrCreate(['provider_event_key' => $data['event_key']], ['provider' => 'sandbox', 'payment_attempt_id' => $attempt->id, 'payload' => $data]);
-            abort_unless($event->payload === $data, 409, 'Kunci event telah digunakan untuk payload berbeda.');
+            $storedPayload = $event->payload;
+            $incomingPayload = $data;
+            ksort($storedPayload);
+            ksort($incomingPayload);
+            abort_unless($storedPayload === $incomingPayload, 409, 'Kunci event telah digunakan untuk payload berbeda.');
 
             return $event->id;
         }, 3);

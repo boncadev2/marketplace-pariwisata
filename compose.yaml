@@ -37,6 +37,7 @@ services:
       dockerfile: infra/docker/backend.Dockerfile
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    command: php artisan serve --host=0.0.0.0 --port=8000 --no-reload
     env_file:
       - ./backend/.env
     environment:
@@ -93,6 +94,11 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+  scheduler:
+    extends:
+      service: worker
+    command: php artisan schedule:work
 
   mysql:
     image: mysql:8.4

@@ -69,7 +69,10 @@ class PaymentWebhookTest extends TestCase
         $headers = ['X-Sandbox-Signature' => 'test-secret'];
 
         $this->postJson('/api/v1/webhooks/payments/sandbox', $payload, $headers)->assertOk();
+        $event = PaymentWebhookEvent::firstOrFail();
+        $event->update(['payload' => array_reverse($event->payload, true)]);
         $this->postJson('/api/v1/webhooks/payments/sandbox', $payload, $headers)->assertOk();
+        $this->postJson('/api/v1/webhooks/payments/sandbox', array_replace($payload, ['status' => 'failed']), $headers)->assertConflict();
         $this->postJson('/api/v1/webhooks/payments/sandbox', array_replace($payload, ['event_key' => 'failure-2', 'status' => 'failed']), $headers)->assertOk();
 
         $this->assertDatabaseCount('payment_webhook_events', 2);

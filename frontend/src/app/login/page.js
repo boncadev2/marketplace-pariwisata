@@ -13,9 +13,9 @@ export default function Page() {
   async function submit(event) {
     event.preventDefault();
     if (busy) return;
+    const form = new FormData(event.currentTarget);
     setBusy(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
     try {
       await apiRequest("/login", {
         method: "POST",

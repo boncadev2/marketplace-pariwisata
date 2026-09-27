@@ -2,6 +2,8 @@ FROM php:8.4-cli-alpine
 
 RUN apk add --no-cache $PHPIZE_DEPS icu-dev libzip-dev oniguruma-dev \
     && docker-php-ext-install intl pdo_mysql zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && apk del $PHPIZE_DEPS
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
