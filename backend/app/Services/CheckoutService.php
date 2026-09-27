@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\InventoryUnavailableException;
+use App\Models\InventoryBucket;
 use App\Models\Order;
 use App\Models\Product;
 use Carbon\CarbonImmutable;
@@ -20,9 +22,14 @@ class CheckoutService
             }
 
             $quote = app(PriceQuoteService::class)->quote($product, $visitDate, $quantity);
+            $bucket = InventoryBucket::query()->where('product_id', $product->id)->whereDate('service_date', $visitDate->toDateString())->where('session_key', 'default')->first();
+            if ($bucket === null) {
+                throw new InventoryUnavailableException('Inventori tanggal ini belum tersedia.');
+            }
+            $hold = app(InventoryReservationService::class)->reserve($bucket, $quantity, CarbonImmutable::now()->addMinutes(15));
             $guestToken = Str::random(48);
             $order = Order::create(['public_id' => (string) Str::uuid(), 'partner_id' => $product->partner_id, 'idempotency_key' => $idempotencyKey, 'guest_access_hash' => Hash::make($guestToken), 'customer_name' => $name, 'customer_email' => $email, 'currency' => $quote['currency'], 'total' => $quote['total'], 'policy_snapshot' => ['visit_date' => $visitDate->toDateString()]]);
-            $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString()]]);
+            $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString(), 'inventory_hold_id' => $hold->id]]);
 
             return [$order, $guestToken];
         });

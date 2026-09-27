@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\InventoryUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Services\CheckoutService;
@@ -17,7 +18,11 @@ class CheckoutController extends Controller
         $key = $request->header('Idempotency-Key');
         abort_unless(is_string($key) && strlen($key) >= 16, 422, 'Idempotency-Key wajib diisi.');
         $product = Product::query()->where('slug', $data['product_slug'])->where('status', 'published')->firstOrFail();
-        [$order, $guestToken] = $checkoutService->create($product, CarbonImmutable::parse($data['visit_date']), $data['quantity'], $data['customer_name'], $data['customer_email'], $key);
+        try {
+            [$order, $guestToken] = $checkoutService->create($product, CarbonImmutable::parse($data['visit_date']), $data['quantity'], $data['customer_name'], $data['customer_email'], $key);
+        } catch (InventoryUnavailableException $exception) {
+            return response()->json(['error' => ['code' => 'INVENTORY_UNAVAILABLE', 'message' => $exception->getMessage()]], 409);
+        }
 
         return response()->json(['data' => ['order_id' => $order->public_id, 'status' => $order->status, 'total' => $order->total, 'currency' => $order->currency, 'guest_access_token' => $guestToken]], $guestToken ? 201 : 200);
     }

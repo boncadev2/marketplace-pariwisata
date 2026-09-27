@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\InventoryUnavailableException;
 use App\Http\Controllers\Controller;
+use App\Models\InventoryHold;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentWebhookEvent;
+use App\Services\InventoryReservationService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +39,26 @@ class PaymentWebhookController extends Controller
                 $attempt->update(['status' => $data['status']]);
             }
             if ($data['status'] === 'succeeded' && $order->status === 'pending_payment') {
-                $order->update(['status' => 'paid']);
+                $item = $order->items()->first();
+                $hold = InventoryHold::find($item?->snapshot['inventory_hold_id'] ?? null);
+                $allocated = false;
+                if ($hold !== null) {
+                    $inventory = app(InventoryReservationService::class);
+                    $hold = $inventory->confirm($hold);
+                    if ($hold->state !== 'confirmed') {
+                        try {
+                            $replacement = $inventory->reserve($hold->bucket, $hold->quantity, CarbonImmutable::now()->addMinutes(15));
+                            $replacement = $inventory->confirm($replacement);
+                            $item->update(['snapshot' => array_replace($item->snapshot, ['inventory_hold_id' => $replacement->id])]);
+                            $allocated = $replacement->state === 'confirmed';
+                        } catch (InventoryUnavailableException) {
+                            $allocated = false;
+                        }
+                    } else {
+                        $allocated = true;
+                    }
+                }
+                $order->update(['status' => $allocated ? 'paid' : 'payment_exception']);
             }
             $event->update(['processed_at' => now()]);
         }, 3);

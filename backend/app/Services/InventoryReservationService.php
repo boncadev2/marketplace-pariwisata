@@ -13,6 +13,10 @@ class InventoryReservationService
 {
     public function reserve(InventoryBucket $bucket, int $quantity, CarbonImmutable $expiresAt): InventoryHold
     {
+        if ($quantity < 1) {
+            throw new InventoryUnavailableException('Kuantitas wajib positif.');
+        }
+
         return DB::transaction(function () use ($bucket, $quantity, $expiresAt): InventoryHold {
             $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($bucket->id);
             $this->expireBucketHolds($bucket, CarbonImmutable::now());
@@ -35,13 +39,13 @@ class InventoryReservationService
     public function confirm(InventoryHold $hold): InventoryHold
     {
         return DB::transaction(function () use ($hold): InventoryHold {
+            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
             $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
 
             if ($hold->state !== 'active') {
                 return $hold;
             }
 
-            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
             $this->expireBucketHolds($bucket, CarbonImmutable::now());
             $hold->refresh();
 
@@ -60,13 +64,13 @@ class InventoryReservationService
     public function release(InventoryHold $hold, string $state = 'released'): InventoryHold
     {
         return DB::transaction(function () use ($hold, $state): InventoryHold {
+            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
             $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
 
             if ($hold->state !== 'active') {
                 return $hold;
             }
 
-            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
             $bucket->decrement('held', $hold->quantity);
             $hold->update(['state' => $state, 'released_at' => CarbonImmutable::now()]);
 
