@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
+use App\Models\Voucher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -69,5 +71,24 @@ class AccountOrdersTest extends TestCase
         $this->actingAs($owner)->getJson('/api/v1/account/orders/'.$foreign->public_id)->assertNotFound();
         $this->actingAs($owner)->getJson('/api/v1/account/orders?status=imaginary')->assertUnprocessable();
 
+    }
+
+    public function test_account_voucher_requires_ownership_and_paid_status(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $owner->id, 'status' => 'paid']);
+        $product = Product::create(['partner_id' => $order->partner_id, 'name' => 'Tiket test', 'slug' => 'account-voucher-test', 'type' => 'ticket']);
+        $item = $order->items()->create(['product_id' => $product->id, 'name' => 'Tiket test', 'quantity' => 1, 'unit_price' => 100, 'total' => 100, 'snapshot' => []]);
+        $token = str_repeat('v', 48);
+        Voucher::create(['order_item_id' => $item->id, 'partner_id' => $order->partner_id, 'token_hash' => hash('sha256', $token), 'token' => $token, 'service_date' => '2026-10-01', 'admissions' => 1]);
+        $uri = '/api/v1/account/orders/'.$order->public_id.'/vouchers';
+
+        $this->getJson($uri)->assertUnauthorized();
+        $this->actingAs($stranger)->getJson($uri)->assertNotFound();
+        $response = $this->actingAs($owner)->getJson($uri)->assertOk()->assertJsonPath('data.vouchers.0.token', $token);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $order->update(['status' => 'refunded']);
+        $this->actingAs($owner)->getJson($uri)->assertOk()->assertJsonCount(0, 'data.vouchers');
     }
 }

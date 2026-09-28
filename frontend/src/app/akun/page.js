@@ -109,7 +109,7 @@ export default function Page() {
             <p>Kunjungan: {order.visit_date || "Belum ditentukan"}</p>
             <p>{new Intl.NumberFormat("id-ID", { style: "currency", currency: order.currency }).format(order.total)}</p>
             <small>ID: {order.order_id}</small>
-            {order.status === "paid" && <p>Voucher tersedia melalui kode akses pesanan di halaman <Link href="/voucher">voucher</Link>.</p>}
+            {order.status === "paid" && <p><Link href={`/voucher?order_id=${encodeURIComponent(order.order_id)}&account=1`}>Buka voucher</Link></p>}
             {order.status === "payment_exception" && <p>Pembayaran perlu diperiksa petugas. Jangan membayar ulang.</p>}
           </article>)}</div> : <p>Belum ada pesanan yang ditautkan dengan filter ini.</p>}
         </section>

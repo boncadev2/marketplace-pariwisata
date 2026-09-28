@@ -51,6 +51,25 @@ export default function VoucherPage() {
   const [result, setResult] = useState(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("order_id");
+    if (params.get("account") !== "1" || !orderId) return;
+    let active = true;
+    apiRequest(`/account/orders/${encodeURIComponent(orderId)}/vouchers`)
+      .then((response) => {
+        if (!active) return;
+        setResult(response.data);
+        if (!response.data.vouchers.length)
+          setMessage("Voucher belum tersedia untuk status pesanan ini.");
+      })
+      .catch(() => {
+        if (active) setMessage("Voucher akun tidak dapat dibuka. Masuk kembali atau gunakan kode akses pesanan.");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   async function open(event) {
     event.preventDefault();
     if (busy) return;
@@ -79,7 +98,7 @@ export default function VoucherPage() {
       <section className="page-intro">
         <h1>Voucher perjalanan</h1>
         <p>
-          Masukkan nomor pesanan dan kode akses yang diterima saat checkout.
+          Voucher pesanan yang sudah ditautkan dapat dibuka dari akun. Untuk pesanan tamu, masukkan nomor pesanan dan kode akses dari checkout.
         </p>
         <form className="search-panel" onSubmit={open}>
           <label>

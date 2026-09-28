@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Voucher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,22 @@ class AccountOrderController extends Controller
         $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with('items:id,order_id,name,quantity')->firstOrFail();
 
         return response()->json(['data' => $this->summary($order)])->header('Cache-Control', 'private, no-store');
+    }
+
+    public function vouchers(Request $request, string $publicId): JsonResponse
+    {
+        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->firstOrFail();
+        $vouchers = $order->status === 'paid'
+            ? Voucher::query()->whereIn('order_item_id', $order->items()->pluck('id'))->get()->map(fn (Voucher $voucher) => [
+                'token' => $voucher->token,
+                'status' => $voucher->status,
+                'service_date' => $voucher->service_date->toDateString(),
+                'admissions' => $voucher->admissions,
+                'used_admissions' => $voucher->used_admissions,
+            ])
+            : [];
+
+        return response()->json(['data' => ['order_id' => $order->public_id, 'status' => $order->status, 'vouchers' => $vouchers]])->header('Cache-Control', 'private, no-store');
     }
 
     public function claim(Request $request): JsonResponse
