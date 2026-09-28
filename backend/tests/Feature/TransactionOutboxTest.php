@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class TransactionOutboxTest extends TestCase
@@ -142,6 +143,30 @@ class TransactionOutboxTest extends TestCase
         $this->artisan('notifications:dispatch-outbox', ['--inspect' => true])->assertSuccessful();
 
         Queue::assertNothingPushed();
+    }
+
+    public static function obsoleteNotices(): array
+    {
+        return [
+            'awaiting after payment' => ['awaiting_payment', 'paid'],
+            'expired after payment' => ['expired', 'paid'],
+            'confirmation after refund' => ['confirmation', 'refunded'],
+            'voucher after cancellation' => ['voucher', 'cancelled'],
+        ];
+    }
+
+    #[DataProvider('obsoleteNotices')]
+    public function test_obsolete_notice_is_superseded_without_sending(string $type, string $status): void
+    {
+        $order = Order::factory()->create(['status' => $status]);
+        $delivery = NotificationDelivery::factory()->create(['order_id' => $order->id, 'type' => $type]);
+        Mail::fake();
+
+        (new DeliverTransactionNotice($delivery->id))->handle();
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseHas('notification_deliveries', ['id' => $delivery->id, 'status' => 'superseded', 'attempts' => 0]);
+        $this->assertSame('superseded', $delivery->fresh()->delivery_log[0]['result']);
     }
 
     public function test_delivery_is_refused_inside_an_uncommitted_transaction(): void

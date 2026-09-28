@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:8080'),
     'transaction_notices' => ['enabled' => env('TRANSACTION_NOTICES_ENABLED', false)],
     'sandbox_payment' => [
         'webhook_secret' => env('SANDBOX_PAYMENT_WEBHOOK_SECRET'),

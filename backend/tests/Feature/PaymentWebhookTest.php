@@ -110,6 +110,8 @@ class PaymentWebhookTest extends TestCase
         $attempt = $this->attempt();
         $hold = InventoryHold::firstOrFail();
         $hold->update(['expires_at' => now()->subMinute()]);
+        $this->artisan('inventory:release-expired-holds')->assertSuccessful();
+        $this->assertSame('expired', $attempt->order->fresh()->status);
 
         $this->postJson('/api/v1/webhooks/payments/sandbox', ['event_key' => 'late-1', 'provider_reference' => 'sandbox-test', 'status' => 'succeeded', 'amount' => 125000, 'currency' => 'IDR'], ['X-Sandbox-Signature' => 'test-secret'])->assertOk();
 

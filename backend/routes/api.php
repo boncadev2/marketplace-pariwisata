@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountOrderController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DestinationController;
@@ -24,6 +25,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:3,1');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/me', [AuthController::class, 'profile'])->middleware('auth:sanctum');
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])->middleware(['auth:sanctum', 'throttle:6,1']);
+    Route::get('/account/orders', [AccountOrderController::class, 'index'])->middleware('auth:sanctum');
+    Route::get('/account/orders/{publicId}', [AccountOrderController::class, 'show'])->middleware('auth:sanctum');
+    Route::post('/account/orders/claim', [AccountOrderController::class, 'claim'])->middleware(['auth:sanctum', 'throttle:6,1']);
     Route::get('/lookup/regions', [LookupController::class, 'regions']);
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
     Route::get('/destinations', [DestinationController::class, 'index']);

@@ -27,6 +27,11 @@ class Order extends Model
         return $this->belongsTo(Partner::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);

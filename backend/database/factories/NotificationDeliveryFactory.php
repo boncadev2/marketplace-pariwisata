@@ -19,7 +19,7 @@ class NotificationDeliveryFactory extends Factory
     public function definition(): array
     {
         return [
-            'order_id' => Order::factory(),
+            'order_id' => Order::factory()->state(['status' => 'paid']),
             'deduplication_key' => hash('sha256', fake()->uuid()),
             'type' => 'confirmation',
             'recipient' => 'customer@example.test',

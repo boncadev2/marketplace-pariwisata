@@ -1,8 +1,18 @@
 # Progress Implementasi
 
+## Fase 23 Dashboard Pelanggan dan Klaim Pesanan Tamu
+
+Status: sebagian terimplementasi pada 28 September 2026. Dashboard JavaScript `/akun` menampilkan pesanan yang telah ditautkan, filter status, total dan tanggal kunjungan; login pelanggan mengarah ke dashboard. API daftar/detail hanya mengambil `orders.user_id` milik sesi, tidak mengasosiasikan pesanan hanya berdasarkan alamat email. Klaim membutuhkan login, email akun terverifikasi, alamat email pesanan yang cocok, dan kode akses tamu 48 karakter. Klaim mengunci order, idempoten untuk pemiliknya, dan menolak transfer kepemilikan. Respons dibatasi ke ringkasan aman dan `Cache-Control: private, no-store`.
+
+Registrasi telah memicu email verifikasi; sekarang tersedia endpoint kirim ulang dan tautan bertanda tangan untuk menyelesaikannya. Pada Compose lokal, email ditangkap Mailpit, bukan dikirim ke pelanggan nyata. Migrasi nullable `orders.user_id` diterapkan tanpa reset data. Verifikasi: suite penuh 76 test / 278 assertion lulus di SQLite in-memory. Tiga test concurrency MySQL dilewati di suite SQLite ini (telah lulus terisolasi 3 test / 19 assertion sebelumnya); lint frontend 0 error dengan 6 warning gambar pada perubahan beranda terpisah; build Next.js dan HTTP 200 `/akun` lulus.
+
+Belum selesai: detail jadwal/kontak mitra, invoice/bukti sesuai kebijakan, tiket bantuan dan lampiran aman, wishlist/profil. Tombol voucher pada dashboard masih mengarah ke alur kode akses tamu. Klaim Fase 23 belum dinyatakan selesai.
+
 ## Fase 22 Notifikasi dan Komunikasi Transaksi
 
 Status: sedang dikerjakan — template, outbox dan pemicu transaksi utama tervalidasi lokal.
+
+Lanjutan expiry 28 September: scheduler pelepasan hold sekarang mengubah order `pending_payment` menjadi `expired` hanya ketika semua hold item sudah expired, dan membuat event notifikasi idempoten dalam transaksi. Webhook pembayaran terlambat boleh merealokasi kuota dari `expired` bila masih tersedia; jika tidak, tetap masuk `payment_exception`. Pengirim outbox mengunci order lebih dulu dan menandai notifikasi yang sudah usang sebagai `superseded` tanpa SMTP, misalnya menunggu bayar sesudah paid atau voucher sesudah refund. Uji MySQL terisolasi untuk race expiry-vs-paid, scanner bersamaan, dan perebutan kuota terakhir: 3 test / 19 assertion lulus. Database uji MySQL tmpfs terpisah dari database aplikasi dan kontainernya dihentikan sesudah pengujian. Workflow perubahan jadwal/cancel/refund dan provider produksi masih belum tersedia.
 
 Lanjutan outbox 28 September: tabel `notification_deliveries` menyimpan deduplication key unik, recipient/snapshot terenkripsi, status, jumlah percobaan, timestamp dan delivery log tanpa pesan error sensitif. Checkout mencatat awaiting_payment; webhook paid mencatat confirmation/voucher dalam transaksi order, tanpa SMTP atau dispatch di dalam transaksi. Poller terjadwal mengantrekan ID saja; worker memakai claim row untuk mencegah duplicate send sesudah acceptance, maksimal 3 percobaan dengan jeda 1/2 menit, terminal failed. Sending yang terputus lebih dari 5 menit menjadi uncertain dan tidak otomatis diulang. Inspeksi metadata tersedia melalui `notifications:dispatch-outbox --inspect`.
 

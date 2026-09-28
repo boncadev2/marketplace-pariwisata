@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\ExpireOrderPayments;
 use App\Services\InventoryReservationService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -18,6 +19,8 @@ class ReleaseExpiredInventoryHolds extends Command
     {
         $released = $inventoryReservationService->releaseExpired();
         $this->info("Released {$released} expired inventory hold(s).");
+        $expiredOrders = app(ExpireOrderPayments::class)->run();
+        $this->info("Expired {$expiredOrders} payment window(s).");
 
         return self::SUCCESS;
     }

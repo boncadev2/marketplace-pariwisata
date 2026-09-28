@@ -32,6 +32,12 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/v1/register', ['name' => 'Demo', 'email' => 'demo@example.test', 'password' => 'short', 'password_confirmation' => 'short'])->assertUnprocessable();
     }
 
+    public function test_registration_normalizes_email_before_uniqueness_check(): void
+    {
+        User::factory()->create(['email' => 'member@example.test']);
+        $this->postJson('/api/v1/register', ['name' => 'Demo', 'email' => 'MEMBER@example.test', 'password' => 'strong-password-123', 'password_confirmation' => 'strong-password-123'])->assertUnprocessable();
+    }
+
     public function test_login_returns_generic_error_for_invalid_password(): void
     {
         User::factory()->create(['email' => 'member@example.test', 'password' => 'password-yang-salah']);

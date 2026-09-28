@@ -5,6 +5,7 @@ use App\Jobs\ProcessPaymentWebhook;
 use App\Models\InventoryBucket;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Services\ExpireOrderPayments;
 use App\Services\InventoryReservationService;
 use App\Services\VoucherService;
 use Carbon\CarbonImmutable;
@@ -26,6 +27,7 @@ if (($argv[3] ?? 'reserve') === 'paid') {
 }
 if (($argv[3] ?? 'reserve') === 'expire') {
     app(InventoryReservationService::class)->releaseExpired();
+    app(ExpireOrderPayments::class)->run();
     echo 'expired';
     exit;
 }

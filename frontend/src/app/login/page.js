@@ -24,7 +24,7 @@ export default function Page() {
           password: form.get("password"),
         }),
       });
-      router.push("/petugas");
+      router.push("/akun");
     } catch (error) {
       setMessage(
         error.status === 422

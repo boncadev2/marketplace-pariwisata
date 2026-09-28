@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\TransactionNotice;
 use App\Models\NotificationDelivery;
+use App\Models\Order;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -34,8 +35,26 @@ class DeliverTransactionNotice implements ShouldQueue
             return;
         }
         $delivery = DB::transaction(function (): ?NotificationDelivery {
+            $candidate = NotificationDelivery::find($this->deliveryId);
+            if (! $candidate) {
+                return null;
+            }
+            $order = Order::query()->lockForUpdate()->findOrFail($candidate->order_id);
             $delivery = NotificationDelivery::query()->lockForUpdate()->find($this->deliveryId);
             if (! $delivery || ! in_array($delivery->status, ['pending', 'retry'], true) || $delivery->available_at->isFuture() || $delivery->attempts >= 3) {
+                return null;
+            }
+            $requiredStatus = match ($delivery->type) {
+                'awaiting_payment' => 'pending_payment',
+                'expired' => 'expired',
+                'confirmation', 'voucher' => 'paid',
+                default => null,
+            };
+            if ($requiredStatus !== null && $order->status !== $requiredStatus) {
+                $log = $delivery->delivery_log;
+                $log[] = ['attempt' => $delivery->attempts, 'result' => 'superseded', 'at' => now()->toIso8601String()];
+                $delivery->update(['status' => 'superseded', 'delivery_log' => $log]);
+
                 return null;
             }
             $delivery->update(['status' => 'sending', 'attempts' => $delivery->attempts + 1, 'claimed_at' => now()]);

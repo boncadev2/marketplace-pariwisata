@@ -27,7 +27,9 @@ Gunakan file `.env` lokal untuk nilai yang berubah antar lingkungan. Jangan masu
 
 Server pengembangan Compose memakai `artisan serve --no-reload` agar environment Docker (terutama MySQL) diteruskan ke proses HTTP. Setelah mengubah environment, recreate backend/worker. Image backend memasang ekstensi Redis untuk cache dan queue.
 
-Layanan `scheduler` menjalankan `schedule:work` untuk expiry inventory dan recovery webhook setiap menit. Pastikan worker dan scheduler hidup bersama backend; periksa `docker compose logs worker scheduler` jika event tertunda.
+Layanan `scheduler` menjalankan `schedule:work` untuk expiry inventory/order, recovery webhook dan outbox setiap menit. Pastikan worker dan scheduler hidup bersama backend; periksa `docker compose logs worker scheduler` jika event tertunda.
+
+Dashboard pelanggan tersedia di `/akun`. Pesanan tamu tidak otomatis muncul hanya karena email sama: pengguna harus masuk, memverifikasi email, lalu mengisi ID pesanan dan kode akses 48 karakter dari checkout. Compose menangkap email verifikasi di Mailpit (`http://localhost:8025`); tautan mengarah ke backend pada `APP_URL`, lalu kembali ke `FRONTEND_URL` (default `http://localhost:8080`). Di lingkungan selain lokal, konfigurasi kedua URL dan mailer harus memakai domain/provider yang benar. Kode akses tidak disimpan oleh halaman klaim.
 
 ## Demonstrasi Voucher Lokal
 
@@ -47,4 +49,4 @@ Backup database, restore, dan prosedur insiden akan dirinci pada Fase 32. Sebelu
 - Lihat 50 delivery terakhir tanpa mengirim: `docker compose exec -T backend php artisan notifications:dispatch-outbox --inspect`. Output tidak memuat alamat email atau snapshot pelanggan.
 - Kegagalan dicoba ulang setelah 1 lalu 2 menit, maksimal 3 percobaan, kemudian `failed`. Pengiriman yang masih `sending` lebih dari 5 menit ditandai `uncertain`, bukan dikirim ulang otomatis. Periksa provider sebelum tindakan manual.
 - Status `sent` berarti transport menerima pesan, bukan bukti diterima pelanggan. Message-ID stabil membantu pelacakan; SMTP tidak menjamin exactly-once jika koneksi putus setelah penerimaan. Retry terbatas masih dapat menghasilkan duplikat pada kasus ambigu; sebelum produksi diperlukan kebijakan/provider idempotensi yang disetujui.
-- Template expiry, perubahan jadwal, pembatalan dan refund tersedia, tetapi integrasi pemicunya menunggu implementasi workflow terkait. WhatsApp nonaktif.
+- Expiry order dari hold yang kedaluwarsa memicu template `expired`. Pengirim memeriksa status order terbaru dan melewati pesan usang tanpa SMTP. Template perubahan jadwal, pembatalan dan refund tersedia, tetapi integrasi pemicunya menunggu implementasi workflow terkait. WhatsApp nonaktif.

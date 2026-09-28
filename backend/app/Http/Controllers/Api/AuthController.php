@@ -15,6 +15,9 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => mb_strtolower($request->input('email'))]);
+        }
         $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'max:255', 'unique:users,email'], 'password' => ['required', 'string', 'min:12', 'confirmed']]);
         $user = User::create($data);
         event(new Registered($user));
@@ -47,6 +50,15 @@ class AuthController extends Controller
     public function profile(Request $request): JsonResponse
     {
         return response()->json(['data' => $request->user()]);
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        if (! $request->user()->hasVerifiedEmail()) {
+            $request->user()->sendEmailVerificationNotification();
+        }
+
+        return response()->json(['message' => 'Jika diperlukan, tautan verifikasi telah dikirim.']);
     }
 
     public function forgotPassword(Request $request): JsonResponse

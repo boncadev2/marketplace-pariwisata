@@ -38,7 +38,7 @@ class ProcessPaymentWebhook implements ShouldQueue
             if ($attempt->status !== 'succeeded') {
                 $attempt->update(['status' => $data['status']]);
             }
-            if ($data['status'] === 'succeeded' && $order->status === 'pending_payment') {
+            if ($data['status'] === 'succeeded' && in_array($order->status, ['pending_payment', 'expired'], true)) {
                 $item = $order->items()->first();
                 $hold = InventoryHold::find($item?->snapshot['inventory_hold_id'] ?? null);
                 $allocated = false;
