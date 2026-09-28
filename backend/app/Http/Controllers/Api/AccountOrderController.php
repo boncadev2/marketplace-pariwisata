@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\Voucher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,9 +34,15 @@ class AccountOrderController extends Controller
 
     public function show(Request $request, string $publicId): JsonResponse
     {
-        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with('items:id,order_id,name,quantity')->firstOrFail();
+        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with(['items:id,order_id,name,quantity', 'partner:id,name,contact_email,contact_phone'])->firstOrFail();
+        $paymentStatus = PaymentAttempt::query()->where('order_id', $order->id)->orderByDesc('id')->value('status');
 
-        return response()->json(['data' => $this->summary($order)])->header('Cache-Control', 'private, no-store');
+        return response()->json(['data' => [
+            ...$this->summary($order),
+            'payment_status' => $paymentStatus,
+            'manager' => ['name' => $order->partner->name, 'email' => $order->partner->contact_email, 'phone' => $order->partner->contact_phone],
+            'receipt_available' => false,
+        ]])->header('Cache-Control', 'private, no-store');
     }
 
     public function vouchers(Request $request, string $publicId): JsonResponse

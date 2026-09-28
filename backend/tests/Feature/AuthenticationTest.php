@@ -38,6 +38,19 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/v1/register', ['name' => 'Demo', 'email' => 'MEMBER@example.test', 'password' => 'strong-password-123', 'password_confirmation' => 'strong-password-123'])->assertUnprocessable();
     }
 
+    public function test_profile_name_can_change_without_changing_verified_email_or_role(): void
+    {
+        $user = User::factory()->create(['email' => 'owner@example.test']);
+        $this->patchJson('/api/v1/account/profile', ['name' => 'Nama Baru'])->assertUnauthorized();
+
+        $this->actingAs($user)->patchJson('/api/v1/account/profile', ['name' => 'Nama Baru', 'email' => 'hijack@example.test', 'platform_role' => 'super_admin'])->assertOk()->assertJsonPath('data.name', 'Nama Baru');
+
+        $this->assertSame('owner@example.test', $user->fresh()->email);
+        $this->assertNotSame('super_admin', $user->fresh()->platform_role);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        $this->actingAs($user)->patchJson('/api/v1/account/profile', ['name' => 'X'])->assertUnprocessable()->assertJsonValidationErrors('name');
+    }
+
     public function test_login_returns_generic_error_for_invalid_password(): void
     {
         User::factory()->create(['email' => 'member@example.test', 'password' => 'password-yang-salah']);

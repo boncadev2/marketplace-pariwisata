@@ -59,6 +59,7 @@ services:
     volumes:
       - ./backend:/var/www
       - backend_vendor:/var/www/vendor
+      - ./infra/docker/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     depends_on:
       mysql:
         condition: service_healthy

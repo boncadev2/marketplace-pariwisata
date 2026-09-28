@@ -31,6 +31,10 @@ Layanan `scheduler` menjalankan `schedule:work` untuk expiry inventory/order, re
 
 Dashboard pelanggan tersedia di `/akun`. Pesanan tamu tidak otomatis muncul hanya karena email sama: pengguna harus masuk, memverifikasi email, lalu mengisi ID pesanan dan kode akses 48 karakter dari checkout. Compose menangkap email verifikasi di Mailpit (`http://localhost:8025`); tautan mengarah ke backend pada `APP_URL`, lalu kembali ke `FRONTEND_URL` (default `http://localhost:8080`). Di lingkungan selain lokal, konfigurasi kedua URL dan mailer harus memakai domain/provider yang benar. Kode akses tidak disimpan oleh halaman klaim.
 
+Tiket bantuan pelanggan ada di `/bantuan` setelah order diklaim. Lampiran disimpan di `backend/storage/app/private/support-attachments`, bukan pada disk publik; PDF/JPG/PNG maksimal 5 MB dapat diunduh hanya oleh pemilik tiket melalui API. Disk lokal tersebut termasuk data yang harus dicakup backup sebelum produksi. Belum ada triase/balasan petugas atau pemindaian malware; jangan menjanjikan dukungan operasional atau menerima lampiran pelanggan nyata sebelum kontrol tersebut tersedia.
+
+Compose memasang `infra/docker/uploads.ini` ke backend HTTP (`upload_max_filesize=6M`, `post_max_size=8M`) agar validasi lampiran 5 MB benar-benar dapat dicapai. Dockerfile juga menyalin konfigurasi itu untuk rebuild image; perubahan runtime saat ini sudah aktif tanpa rebuild karena pengambilan metadata base image dari jaringan tertahan. Periksa dengan `docker compose exec -T backend php -i | rg 'upload_max_filesize|post_max_size'`.
+
 ## Demonstrasi Voucher Lokal
 
 Jalankan `docker compose exec -T backend php artisan db:seed --class=VoucherDemoSeeder`. Seeder hanya berjalan di environment local, tidak menghapus data, dan membuat satu order demonstrasi per tanggal Asia/Jakarta.

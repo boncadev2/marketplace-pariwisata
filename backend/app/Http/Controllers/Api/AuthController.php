@@ -52,6 +52,14 @@ class AuthController extends Controller
         return response()->json(['data' => $request->user()]);
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $data = $request->validate(['name' => ['required', 'string', 'min:2', 'max:255']]);
+        $request->user()->update(['name' => $data['name']]);
+
+        return response()->json(['data' => $request->user()->fresh()])->header('Cache-Control', 'private, no-store');
+    }
+
     public function resendVerification(Request $request): JsonResponse
     {
         if (! $request->user()->hasVerifiedEmail()) {

@@ -2,13 +2,15 @@
 
 namespace Database\Factories;
 
-use App\Models\Region;
+use App\Models\Destination;
+use App\Models\User;
+use App\Models\WishlistItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Region>
+ * @extends Factory<WishlistItem>
  */
-class RegionFactory extends Factory
+class WishlistItemFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,9 +20,8 @@ class RegionFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->unique()->bothify('REG-####'),
-            'name' => fake()->city(),
-            'type' => 'regency',
+            'user_id' => User::factory(),
+            'destination_id' => Destination::factory(),
         ];
     }
 }

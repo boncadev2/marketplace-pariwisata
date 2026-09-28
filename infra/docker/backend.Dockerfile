@@ -7,6 +7,7 @@ RUN apk add --no-cache $PHPIZE_DEPS icu-dev libzip-dev oniguruma-dev \
     && apk del $PHPIZE_DEPS
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+COPY infra/docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 WORKDIR /var/www
 COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts

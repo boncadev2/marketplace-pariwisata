@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Voucher;
@@ -62,12 +63,16 @@ class AccountOrdersTest extends TestCase
         $owner = User::factory()->create();
         $other = User::factory()->create();
         $paid = Order::factory()->create(['user_id' => $owner->id, 'status' => 'paid', 'policy_snapshot' => ['visit_date' => '2026-10-01']]);
+        $paid->partner->update(['contact_email' => 'manager@example.test', 'contact_phone' => '+6281200000000']);
+        PaymentAttempt::create(['order_id' => $paid->id, 'provider' => 'sandbox', 'provider_reference' => 'private-provider-reference', 'status' => 'succeeded', 'currency' => 'IDR', 'amount' => 100]);
         $pending = Order::factory()->create(['user_id' => $owner->id, 'status' => 'pending_payment']);
         $foreign = Order::factory()->create(['user_id' => $other->id]);
 
         $response = $this->actingAs($owner)->getJson('/api/v1/account/orders?status=paid')->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.order_id', $paid->public_id)->assertJsonPath('data.0.visit_date', '2026-10-01');
         $response->assertDontSee('customer_email')->assertDontSee('guest_access_hash')->assertDontSee('idempotency_key');
         $this->actingAs($owner)->getJson('/api/v1/account/orders/'.$pending->public_id)->assertOk();
+        $detail = $this->actingAs($owner)->getJson('/api/v1/account/orders/'.$paid->public_id)->assertOk()->assertJsonPath('data.payment_status', 'succeeded')->assertJsonPath('data.manager.email', 'manager@example.test')->assertJsonPath('data.receipt_available', false);
+        $detail->assertDontSee('private-provider-reference');
         $this->actingAs($owner)->getJson('/api/v1/account/orders/'.$foreign->public_id)->assertNotFound();
         $this->actingAs($owner)->getJson('/api/v1/account/orders?status=imaginary')->assertUnprocessable();
 

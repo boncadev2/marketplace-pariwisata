@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Partner;
+use App\Models\Region;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +19,10 @@ class PartnerFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'region_id' => Region::factory(),
+            'name' => fake()->company(),
+            'slug' => fake()->unique()->uuid(),
+            'status' => 'approved',
         ];
     }
 }

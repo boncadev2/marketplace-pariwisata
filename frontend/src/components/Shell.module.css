@@ -1,0 +1,232 @@
+.shell {
+  --shell-ink: #17251d;
+  --shell-muted: #56685d;
+  --shell-line: #d7e3da;
+  --shell-brand: #116744;
+  background: #f4f8f4;
+  color: var(--shell-ink);
+  font-family: Arial, sans-serif;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+.shell * {
+  box-sizing: border-box;
+}
+
+.shell a {
+  color: var(--shell-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.shell button,
+.shell :global(.button) {
+  background: var(--shell-brand);
+  border: 1px solid var(--shell-brand);
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font: inherit;
+  padding: 0.65rem 1rem;
+}
+
+.shell button:hover,
+.shell :global(.button):hover {
+  background: #0c5034;
+}
+
+.shell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.shell :global(.site-header) {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--shell-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: space-between;
+  padding: 1rem clamp(1rem, 4vw, 5rem);
+}
+
+.shell :global(.site-header) :global(.brand) {
+  color: var(--shell-brand);
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.shell :global(.site-header) nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.shell :global(.site-header) a {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.shell :global(.site-header) a:hover {
+  text-decoration: underline;
+}
+
+.shell main {
+  margin: auto;
+  max-width: 1200px;
+  padding: 0 1rem 4rem;
+}
+
+.shell :global(.hero),
+.shell :global(.page-intro) {
+  max-width: 800px;
+  padding: clamp(2.5rem, 7vw, 5rem) 0 2rem;
+}
+
+.shell :global(.hero) h1,
+.shell :global(.page-intro) h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.12;
+  margin: 0.25rem 0 1rem;
+}
+
+.shell :global(.eyebrow) {
+  color: var(--shell-brand);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell :global(.section) {
+  margin-top: 2.5rem;
+}
+
+.shell :global(.section) h2 {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.shell :global(.card-grid) {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.shell :global(.card) {
+  background: #fff;
+  border: 1px solid var(--shell-line);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.shell :global(.card) h2,
+.shell :global(.card) h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.shell :global(.card-body) {
+  padding: 0.5rem 0 0;
+}
+
+.shell :global(.image-placeholder),
+.shell :global(.hero-placeholder) {
+  background: linear-gradient(135deg, #a3cfb8, #e7b658);
+  border-radius: 12px;
+  min-height: 150px;
+}
+
+.shell :global(.search-panel) {
+  align-items: end;
+  background: #fff;
+  border: 1px solid var(--shell-line);
+  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.shell :global(.search-panel) label {
+  display: grid;
+  flex: 1 1 220px;
+  font-weight: 700;
+  gap: 0.35rem;
+}
+
+.shell input,
+.shell select,
+.shell textarea {
+  background: #fff;
+  border: 1px solid #b8cbbd;
+  border-radius: 8px;
+  color: var(--shell-ink);
+  font: inherit;
+  max-width: 100%;
+  padding: 0.65rem;
+}
+
+.shell textarea {
+  min-height: 100px;
+}
+
+.shell :global(.detail-layout) {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 2rem;
+}
+
+.shell :global(.hero-placeholder) {
+  min-height: 300px;
+}
+
+.shell :global(.facts) {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.shell :global(.facts) dt {
+  color: var(--shell-muted);
+}
+
+.shell :global(.facts) dd {
+  font-weight: 700;
+  margin: 0;
+}
+
+.shell :global(.site-footer) {
+  border-top: 1px solid var(--shell-line);
+  color: var(--shell-muted);
+  padding: 2rem clamp(1rem, 4vw, 5rem);
+}
+
+.shell :global(.skip-link) {
+  background: #fff;
+  left: 1rem;
+  padding: 0.5rem;
+  position: absolute;
+  top: -5rem;
+  z-index: 20;
+}
+
+.shell :global(.skip-link):focus {
+  top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .shell :global(.detail-layout),
+  .shell :global(.facts) {
+    grid-template-columns: 1fr;
+  }
+}

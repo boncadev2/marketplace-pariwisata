@@ -21,6 +21,8 @@ export default function Page() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
 
   const reload = useCallback(async (filter = "") => {
     const query = filter ? `?status=${encodeURIComponent(filter)}` : "";
@@ -34,8 +36,10 @@ export default function Page() {
         const account = await apiRequest("/me");
         setProfile(account.data);
         await reload();
+        const saved = await apiRequest("/account/wishlist");
+        setWishlist(saved.data);
       } catch (error) {
-        setMessage(error.status === 401 ? "Masuk untuk melihat pesanan Anda." : "Pesanan tidak dapat dimuat. Coba lagi.");
+        if (error.status !== 401) setMessage("Pesanan tidak dapat dimuat. Coba lagi.");
       } finally {
         setLoading(false);
       }
@@ -46,6 +50,7 @@ export default function Page() {
   async function changeFilter(event) {
     const next = event.target.value;
     setStatus(next);
+    setSelectedOrder(null);
     setMessage("");
     try {
       await reload(next);
@@ -87,6 +92,44 @@ export default function Page() {
     }
   }
 
+  async function showOrder(orderId) {
+    setMessage("");
+    try {
+      const result = await apiRequest(`/account/orders/${encodeURIComponent(orderId)}`);
+      setSelectedOrder(result.data);
+    } catch {
+      setMessage("Rincian pesanan tidak dapat dibuka. Coba lagi.");
+    }
+  }
+
+  async function updateProfile(event) {
+    event.preventDefault();
+    if (busy) return;
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await apiRequest("/account/profile", { method: "PATCH", body: JSON.stringify({ name: form.get("name") }) });
+      setProfile(result.data);
+      setMessage("Nama profil berhasil diperbarui.");
+    } catch {
+      setMessage("Nama profil belum dapat diperbarui. Gunakan minimal 2 karakter.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeWishlist(itemId) {
+    setMessage("");
+    try {
+      await apiRequest(`/account/wishlist/${itemId}`, { method: "DELETE" });
+      setWishlist((items) => items.filter((item) => item.id !== itemId));
+      setMessage("Destinasi dihapus dari wishlist.");
+    } catch {
+      setMessage("Wishlist belum dapat diperbarui. Coba lagi.");
+    }
+  }
+
   return (
     <Shell>
       <section className="page-intro">
@@ -109,9 +152,39 @@ export default function Page() {
             <p>Kunjungan: {order.visit_date || "Belum ditentukan"}</p>
             <p>{new Intl.NumberFormat("id-ID", { style: "currency", currency: order.currency }).format(order.total)}</p>
             <small>ID: {order.order_id}</small>
+            <p><button type="button" onClick={() => showOrder(order.order_id)}>Lihat rincian</button></p>
             {order.status === "paid" && <p><Link href={`/voucher?order_id=${encodeURIComponent(order.order_id)}&account=1`}>Buka voucher</Link></p>}
+            <p><Link href={`/bantuan?order_id=${encodeURIComponent(order.order_id)}`}>Minta bantuan</Link></p>
             {order.status === "payment_exception" && <p>Pembayaran perlu diperiksa petugas. Jangan membayar ulang.</p>}
           </article>)}</div> : <p>Belum ada pesanan yang ditautkan dengan filter ini.</p>}
+        </section>
+        {selectedOrder && <section className="section">
+          <h2>Rincian pesanan</h2>
+          <p>ID: {selectedOrder.order_id}</p>
+          <p>Status pesanan: {statuses[selectedOrder.status] || selectedOrder.status}</p>
+          <p>Status upaya pembayaran terakhir: {selectedOrder.payment_status || "Belum ada upaya tercatat"}</p>
+          <p>Jadwal kunjungan: {selectedOrder.visit_date || "Belum ditentukan"}</p>
+          <p>Pengelola: {selectedOrder.manager.name}</p>
+          {selectedOrder.manager.email && <p>Email pengelola: <a href={`mailto:${selectedOrder.manager.email}`}>{selectedOrder.manager.email}</a></p>}
+          {selectedOrder.manager.phone && <p>Telepon pengelola: <a href={`tel:${selectedOrder.manager.phone}`}>{selectedOrder.manager.phone}</a></p>}
+          {!selectedOrder.manager.email && !selectedOrder.manager.phone && <p>Kontak pengelola belum tersedia. Gunakan tiket bantuan.</p>}
+          {!selectedOrder.receipt_available && <p>Invoice atau bukti transaksi resmi belum tersedia untuk pesanan ini.</p>}
+        </section>}
+        <section className="section">
+          <h2>Wishlist destinasi</h2>
+          {wishlist.length ? <div className="card-grid">{wishlist.map((item) => <article className="card" key={item.id}>
+            <h3>{item.available ? item.destination.name : "Destinasi tidak tersedia"}</h3>
+            {item.available && <p><Link href={`/destinasi/${item.destination.slug}`}>Lihat destinasi</Link></p>}
+            <button type="button" onClick={() => removeWishlist(item.id)}>Hapus dari wishlist</button>
+          </article>)}</div> : <p>Belum ada destinasi tersimpan. <Link href="/destinasi">Cari destinasi</Link>.</p>}
+        </section>
+        <section className="section">
+          <h2>Pengaturan profil</h2>
+          <p>Email akun: {profile.email} (perubahan email belum tersedia di sini).</p>
+          <form className="search-panel" onSubmit={updateProfile}>
+            <label>Nama<input key={profile.name} name="name" defaultValue={profile.name} minLength={2} maxLength={255} required disabled={busy} /></label>
+            <button disabled={busy}>{busy ? "Menyimpan…" : "Simpan nama"}</button>
+          </form>
         </section>
         <section className="section">
           <h2>Klaim pesanan tamu</h2>
@@ -122,6 +195,7 @@ export default function Page() {
             <button disabled={busy}>{busy ? "Memproses…" : "Tautkan pesanan"}</button>
           </form>
           <p><Link href="/petugas">Portal petugas</Link></p>
+          <p><Link href="/bantuan">Riwayat tiket bantuan</Link></p>
         </section>
       </>}
       <p role="status" aria-live="polite">{message}</p>

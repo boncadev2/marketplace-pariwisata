@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AccountOrderController;
+use App\Http\Controllers\Api\AccountSupportTicketController;
+use App\Http\Controllers\Api\AccountWishlistController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DestinationController;
@@ -25,11 +27,20 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:3,1');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/me', [AuthController::class, 'profile'])->middleware('auth:sanctum');
+    Route::patch('/account/profile', [AuthController::class, 'updateProfile'])->middleware(['auth:sanctum', 'throttle:20,1']);
+    Route::get('/account/wishlist', [AccountWishlistController::class, 'index'])->middleware('auth:sanctum');
+    Route::post('/account/wishlist', [AccountWishlistController::class, 'store'])->middleware(['auth:sanctum', 'throttle:20,1']);
+    Route::delete('/account/wishlist/{itemId}', [AccountWishlistController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
     Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])->middleware(['auth:sanctum', 'throttle:6,1']);
     Route::get('/account/orders', [AccountOrderController::class, 'index'])->middleware('auth:sanctum');
     Route::get('/account/orders/{publicId}', [AccountOrderController::class, 'show'])->middleware('auth:sanctum');
     Route::get('/account/orders/{publicId}/vouchers', [AccountOrderController::class, 'vouchers'])->middleware('auth:sanctum');
     Route::post('/account/orders/claim', [AccountOrderController::class, 'claim'])->middleware(['auth:sanctum', 'throttle:6,1']);
+    Route::get('/account/support-tickets', [AccountSupportTicketController::class, 'index'])->middleware('auth:sanctum');
+    Route::get('/account/support-tickets/{ticketId}', [AccountSupportTicketController::class, 'show'])->middleware('auth:sanctum');
+    Route::post('/account/orders/{publicId}/support-tickets', [AccountSupportTicketController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+    Route::post('/account/support-tickets/{ticketId}/messages', [AccountSupportTicketController::class, 'addMessage'])->middleware(['auth:sanctum', 'throttle:10,1']);
+    Route::get('/account/support-tickets/{ticketId}/attachments/{attachmentId}', [AccountSupportTicketController::class, 'download'])->middleware('auth:sanctum');
     Route::get('/lookup/regions', [LookupController::class, 'regions']);
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
     Route::get('/destinations', [DestinationController::class, 'index']);

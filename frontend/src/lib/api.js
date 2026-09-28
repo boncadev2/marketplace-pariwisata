@@ -9,7 +9,7 @@ export async function apiRequest(path, options = {}) {
       .split("; ")
       .find((entry) => entry.startsWith("XSRF-TOKEN="));
     if (cookie) headers["X-XSRF-TOKEN"] = decodeURIComponent(cookie.slice(11));
-    headers["Content-Type"] = "application/json";
+    if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
   }
   const response = await fetch(`/api/v1${path}`, {
     ...options,

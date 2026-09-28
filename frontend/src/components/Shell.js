@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./Shell.module.css";
 
 const links = [
   ["Destinasi", "/destinasi"],
@@ -9,7 +10,7 @@ const links = [
 
 export function Shell({ children }) {
   return (
-    <>
+    <div className={styles.shell}>
       <a className="skip-link" href="#konten">
         Lewati ke konten
       </a>
@@ -32,11 +33,11 @@ export function Shell({ children }) {
       <footer className="site-footer">
         Data demonstrasi untuk tahap pengembangan.
       </footer>
-    </>
+    </div>
   );
 }
 
-export function Card({ title, meta, price, href = "#" }) {
+export function Card({ title, meta, price, href = "#", children }) {
   return (
     <article className="card">
       <div className="image-placeholder" aria-hidden="true" />
@@ -45,6 +46,7 @@ export function Card({ title, meta, price, href = "#" }) {
         <h2>{title}</h2>
         <p>{price}</p>
         <Link href={href}>Lihat detail</Link>
+        {children}
       </div>
     </article>
   );
