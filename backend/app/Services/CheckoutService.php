@@ -29,7 +29,8 @@ class CheckoutService
             $hold = app(InventoryReservationService::class)->reserve($bucket, $quantity, CarbonImmutable::now()->addMinutes(15));
             $guestToken = Str::random(48);
             $order = Order::create(['public_id' => (string) Str::uuid(), 'partner_id' => $product->partner_id, 'idempotency_key' => $idempotencyKey, 'guest_access_hash' => Hash::make($guestToken), 'customer_name' => $name, 'customer_email' => $email, 'currency' => $quote['currency'], 'total' => $quote['total'], 'policy_snapshot' => ['visit_date' => $visitDate->toDateString()]]);
-            $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString(), 'inventory_hold_id' => $hold->id]]);
+            $commission = app(\App\Services\CommissionService::class)->calculate($product, $quote['total'], $visitDate);
+            $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'commission_rule_id' => $commission['commission_rule_id'], 'commission_amount' => $commission['commission_amount'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString(), 'inventory_hold_id' => $hold->id]]);
 
             app(TransactionOutbox::class)->record($order, 'awaiting_payment', 'created', 'Batas pembayaran: '.$hold->expires_at.'. Simpan kode akses dari checkout.');
 

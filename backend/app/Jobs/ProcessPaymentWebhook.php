@@ -62,6 +62,7 @@ class ProcessPaymentWebhook implements ShouldQueue
             }
             $event->update(['processed_at' => now()]);
             if ($order->fresh()->status === 'paid') {
+                app(\App\Services\LedgerService::class)->recordPayment($order);
                 app(VoucherService::class)->issue($order);
                 app(TransactionOutbox::class)->record($order, 'confirmation', 'paid', 'Status pembayaran: berhasil.');
                 app(TransactionOutbox::class)->record($order, 'voucher', 'issued', 'Gunakan nomor pesanan dan kode akses yang disimpan saat checkout.');

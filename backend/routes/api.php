@@ -48,4 +48,28 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/products/{product:slug}/inventory', [InventoryHoldController::class, 'calendar']);
     Route::post('/partner-applications', [PartnerApplicationController::class, 'store'])->middleware('auth:sanctum');
     Route::post('/media', [MediaController::class, 'store'])->middleware('auth:sanctum');
+    
+    // Phase 24: Pembatalan dan refund
+    Route::post('/orders/{order}/refunds', [\App\Http\Controllers\Api\V1\RefundRequestController::class, 'store'])->middleware('auth:sanctum');
+    Route::post('/refunds/{refundRequest}/approve', [\App\Http\Controllers\Api\V1\RefundRequestController::class, 'approve'])->middleware('auth:sanctum');
+    Route::post('/refunds/{refundRequest}/reject', [\App\Http\Controllers\Api\V1\RefundRequestController::class, 'reject'])->middleware('auth:sanctum');
+    
+    // Phase 25: Laporan Keuangan
+    Route::get('/revenue-reports', [\App\Http\Controllers\Api\V1\RevenueReportingController::class, 'index'])->middleware('auth:sanctum');
+
+    // Phase 26: Payout and Settlement
+    Route::get('/payouts/eligible', [\App\Http\Controllers\Api\V1\PayoutController::class, 'eligible']);
+    Route::post('/payouts/batches', [\App\Http\Controllers\Api\V1\PayoutController::class, 'storeBatch']);
+    Route::post('/payouts/batches/{batch}/approve', [\App\Http\Controllers\Api\V1\PayoutController::class, 'approveBatch']);
+    Route::post('/payouts/batches/{batch}/process', [\App\Http\Controllers\Api\V1\PayoutController::class, 'processBatch']);
+    Route::post('/payouts/batches/{batch}/complete', [\App\Http\Controllers\Api\V1\PayoutController::class, 'completeBatch']);
+    Route::get('/partner-bank-accounts', [\App\Http\Controllers\Api\V1\PartnerBankAccountController::class, 'index']);
+    Route::post('/partner-bank-accounts', [\App\Http\Controllers\Api\V1\PartnerBankAccountController::class, 'store']);
+    Route::post('/partner-bank-accounts/{account}/verify', [\App\Http\Controllers\Api\V1\PartnerBankAccountController::class, 'verify']);
+    // Phase 27: Operational Disputes and Reviews
+    Route::apiResource("disputes", \App\Http\Controllers\Api\V1\OperationalDisputeController::class)->only(["index", "store", "update"]);
+    Route::apiResource("reviews", \App\Http\Controllers\Api\V1\ReviewController::class)->only(["index", "store", "show"]);
+
+    // Phase 28: Reconciliation
+    Route::post('/reconciliation', [\App\Http\Controllers\Api\ReconciliationController::class, 'store']);
 });

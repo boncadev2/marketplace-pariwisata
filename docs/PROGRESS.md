@@ -1,3 +1,52 @@
+## Fase 28 Rekonsiliasi
+
+Status: selesai diimplementasikan pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Model `ReconciliationBatch` dan `ReconciliationEntry` beserta migrasinya.
+- `ReconciliationService` untuk membandingkan mutasi gateway dengan `PaymentAttempt` dan pencatatan di ledger (`JournalEntry`).
+- Endpoint API pada `ReconciliationController` untuk upload mutasi.
+- Pengujian fitur pada `ReconciliationTest`.
+
+Verifikasi tertunda:
+- Linter dan *test* PHP belum dijalankan sepenuhnya karena kendala akses versi PHP 8.4 dan *Docker daemon*. Kode telah disiapkan sesuai instruksi.
+
+## Fase 25 Komisi dan Pencatatan Keuangan
+
+
+Status: selesai diimplementasikan pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Model `CommissionRule` dan layanan `CommissionService` untuk aturan versi per mitra/produk dengan pembulatan Rupiah.
+- Penyimpanan jumlah komisi pada item pesanan saat checkout.
+- Tabel ledger (`LedgerAccount`, `JournalEntry`, `JournalTransaction`) untuk akuntansi *append-only*.
+- `LedgerService` untuk mencatat pembayaran (debit payment gateway, kredit liabilitas mitra dan pendapatan komisi) dan *refund*.
+- `RevenueReportingService` untuk metrik *Gross Booking Value*, pembayaran diterima, *refund*, pendapatan platform, dan dana siap cair.
+- Pengujian fitur pada `CommissionAndLedgerTest` dan *endpoint* baru.
+
+Verifikasi tertunda:
+- Linter dan *test* PHP belum dijalankan sepenuhnya karena kendala akses versi PHP 8.4 dan *Docker daemon*. Kode telah disiapkan sesuai instruksi.
+
+## Fase 24 Pembatalan dan refund
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Logika permintaan pembatalan berdasarkan evaluasi `policy_snapshot` (batas waktu lokal, jumlah refundable).
+- Model `RefundRequest` beserta migrasi, factory, dan relasi ke `Order`.
+- State refund: `requested`, `approved`, `processing`, `succeeded`, dan `failed`.
+- Pembatalan admission/inventory (`InventoryHold` di-set menjadi `released` dan bucket `confirmed` dikurangi).
+- Interface adapter refund (`RefundAdapterInterface`) dan implementasi sandbox (`SandboxRefundAdapter`).
+- Endpoint API untuk mengajukan, menyetujui, dan menolak refund.
+
+Verifikasi yang dijalankan:
+
+- `vendor/bin/pint --format agent` — lulus.
+- `php artisan test tests/Feature/RefundRequestTest.php` — 4 test, 10 assertion lulus memakai SQLite di memori.
+
 # Progress Implementasi
 
 ## Fase 23 Dashboard Pelanggan dan Klaim Pesanan Tamu
@@ -54,7 +103,37 @@ Pemrosesan dipindahkan ke job `ProcessPaymentWebhook` dengan retry dan pemeriksa
 
 Uji MySQL 8.4 terisolasi berhasil: seluruh migrasi berjalan; dua proses PHP serentak berebut satu kursi menghasilkan tepat satu reservasi dan satu penolakan (1 test, 6 assertion). Nama indeks unik itinerary diperpendek agar sesuai batas MySQL. Database test memakai tmpfs dan tidak memakai volume aplikasi.
 
-Uji race expiry-versus-paid MySQL berhasil: order paid, hold lama expired, satu alokasi confirmed, held nol. Bersama uji kuota terakhir: 2 test, 14 assertion lulus. Implementasi sandbox Fase 20 tervalidasi untuk skenario yang dicakup; integrasi provider nyata tetap memerlukan kontrak signature/merchant dari provider yang dipilih. Hanya frontend yang sedang berjalan di Compose pada pemeriksaan terakhir.
+## Fase 26 Settlement dan Pencairan Mitra
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Penentuan kelayakan payout berdasarkan tanggal penyelesaian layanan, masa sanggah, dan penahanan transaksi bermasalah di tabel `orders`.
+- Batch payout (maker-checker) untuk pencairan manual maupun API ke `partner_bank_accounts`.
+- Laporan kelayakan dana per mitra.
+- Pencatatan `payout_items` untuk tiap order.
+
+Verifikasi tertunda:
+
+- Pint dan Testing tidak bisa dieksekusi dikarenakan batasan PHP host dan Docker Desktop yang tidak aktif, namun file telah terstruktur dan menggunakan validasi bawaan Laravel.
+
+
+
+## Fase 27 Operational Disputes dan Reviews
+
+Status: selesai pada 28 September 2026.
+
+Keluaran yang dibuat:
+
+- Tabel `operational_disputes` dan model terkait untuk manajemen sengketa operasional antara pelanggan dan layanan.
+- Endpoint publik `GET` dan `POST` untuk pelaporan perselisihan pesanan serta update resolusi dan status.
+- Tabel `reviews` dan model terkait untuk melacak penilaian dan ulasan pelanggan terhadap produk wisata.
+- Factory, migrasi, dan pengujian fitur.
+
+Verifikasi tertunda:
+
+- Pint dan Testing tidak bisa dieksekusi dikarenakan batasan PHP host dan Docker Desktop yang tidak aktif, namun file telah terstruktur.
 
 ## Fase 18 Checkout dan Pesanan Tamu
 
