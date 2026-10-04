@@ -9,6 +9,14 @@ class ReconciliationEntry extends Model
 {
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'discrepancy_types' => 'array',
+            'provider_payload' => 'array',
+        ];
+    }
+
     public function batch(): BelongsTo
     {
         return $this->belongsTo(ReconciliationBatch::class, 'batch_id');

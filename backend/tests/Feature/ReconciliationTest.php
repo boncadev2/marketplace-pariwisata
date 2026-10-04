@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\JournalEntry;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,6 +15,7 @@ class ReconciliationTest extends TestCase
 
     public function test_reconciliation_process()
     {
+        $admin = User::factory()->create(['platform_role' => 'super_admin']);
         $order = Order::factory()->create([
             'status' => 'paid',
             'total' => 100000,
@@ -59,11 +61,12 @@ class ReconciliationTest extends TestCase
                 [
                     'reference' => 'gw-456',
                     'amount' => 50000,
-                ]
+                ],
             ],
         ];
 
-        $response = $this->postJson('/api/v1/reconciliation', $payload);
+        $response = $this->actingAs($admin)->withHeaders($this->sensitiveHeaders($admin))
+            ->postJson('/api/v1/reconciliation', $payload);
 
         $response->assertStatus(201);
         $response->assertJsonPath('data.status', 'completed');

@@ -1,10 +1,21 @@
 <?php
 
 return [
+    'payment_gateway' => ['driver' => env('PAYMENT_GATEWAY', 'sandbox')],
+    'midtrans' => ['server_key' => env('MIDTRANS_SERVER_KEY'), 'production_enabled' => (bool) env('MIDTRANS_PRODUCTION_ENABLED', false), 'production_server_key' => env('MIDTRANS_PRODUCTION_SERVER_KEY'), 'refunds_enabled' => (bool) env('MIDTRANS_REFUNDS_ENABLED', false), 'webhook_url' => env('MIDTRANS_WEBHOOK_URL')],
+    'commerce' => ['production_enabled' => (bool) env('COMMERCE_PRODUCTION_ENABLED', false)],
+    'shipping' => ['driver' => env('SHIPPING_DRIVER', 'manual'), 'enabled' => (bool) env('SHIPPING_PROVIDER_ENABLED', false), 'api_key' => env('BITESHIP_API_KEY'), 'couriers' => env('SHIPPING_COURIERS', 'jne,sicepat,anteraja')],
+    'refund' => ['driver' => env('REFUND_DRIVER', 'sandbox')],
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:8080'),
     'transaction_notices' => ['enabled' => env('TRANSACTION_NOTICES_ENABLED', false)],
     'sandbox_payment' => [
         'webhook_secret' => env('SANDBOX_PAYMENT_WEBHOOK_SECRET'),
+    ],
+    'sandbox_refund' => [
+        'enabled' => env('SANDBOX_REFUND_ENABLED', false),
+    ],
+    'payment_reconciliation' => [
+        'requests_per_minute' => env('PAYMENT_RECONCILIATION_REQUESTS_PER_MINUTE', 30),
     ],
 
     /*

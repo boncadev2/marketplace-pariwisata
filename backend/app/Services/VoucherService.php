@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\InventoryHold;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\RefundRequest;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherCheckIn;
@@ -49,6 +50,7 @@ class VoucherService
             }
             $order = Order::query()->lockForUpdate()->findOrFail($item->order_id);
             $voucher = Voucher::query()->lockForUpdate()->findOrFail($voucher->id);
+            abort_if(RefundRequest::where('order_id', $order->id)->whereIn('status', ['requested', 'approved', 'processing'])->exists(), 409, 'Voucher ditahan selama pengajuan refund ditinjau.');
             abort_unless($order->status === 'paid' && $voucher->status === 'active' && ($override || $voucher->service_date->toDateString() === now('Asia/Jakarta')->toDateString()), 409, 'Voucher tidak dapat digunakan.');
             $voucher->update(['status' => 'redeemed', 'used_admissions' => $voucher->admissions, 'redeemed_by' => $staff->id, 'redeemed_at' => now()]);
             VoucherCheckIn::create(['voucher_id' => $voucher->id, 'user_id' => $staff->id, 'admissions' => $voucher->admissions, 'override_reason' => $overrideReason]);

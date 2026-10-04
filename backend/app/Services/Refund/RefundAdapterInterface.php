@@ -9,5 +9,6 @@ interface RefundAdapterInterface
     /**
      * Process the refund with the payment provider.
      */
-    public function process(RefundRequest $refundRequest): bool;
+    /** @return array{confirmed: bool, provider_reference?: string, payload?: array<string, mixed>, failure_reason?: string} */
+    public function process(RefundRequest $refundRequest): array;
 }

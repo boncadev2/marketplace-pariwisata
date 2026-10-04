@@ -16,11 +16,11 @@ class Order extends Model
 
     protected $guarded = [];
 
-    protected $hidden = ['guest_access_hash'];
+    protected $hidden = ['guest_access_hash', 'cross_village_snapshot'];
 
     protected function casts(): array
     {
-        return ['policy_snapshot' => 'array'];
+        return ['policy_snapshot' => 'array', 'cross_village_snapshot' => 'array'];
     }
 
     public function partner(): BelongsTo
@@ -41,5 +41,20 @@ class Order extends Model
     public function refundRequest(): HasOne
     {
         return $this->hasOne(RefundRequest::class);
+    }
+
+    public function subOrders(): HasMany
+    {
+        return $this->hasMany(SubOrder::class);
+    }
+
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class);
+    }
+
+    public function payoutItems(): HasMany
+    {
+        return $this->hasMany(PayoutItem::class);
     }
 }

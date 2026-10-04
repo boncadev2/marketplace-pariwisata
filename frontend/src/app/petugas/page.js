@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { Shell } from "../../components/Shell";
 import { apiRequest } from "../../lib/api";
 
@@ -66,9 +67,14 @@ export default function StaffPage() {
 
   return (
     <Shell>
-      <section className="page-intro">
-        <p className="eyebrow">Petugas mitra</p>
-        <h1>Validasi kunjungan</h1>
+      <PageHeader
+        eyebrow="Portal petugas"
+        title="Sambut pengunjung dengan lebih mudah."
+        description="Validasi voucher dan pastikan kunjungan sesuai pesanan."
+        compact
+      />
+      <section className="page-intro voucher-panel">
+        <h2 className="text-xl font-bold mb-3">Validasi voucher</h2>
         <p>
           Gunakan akun petugas mitra. Validasi memerlukan koneksi internet dan
           tanggal kunjungan yang sesuai.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\ConfigureLogging;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -60,6 +61,7 @@ return [
 
         'single' => [
             'driver' => 'single',
+            'tap' => [ConfigureLogging::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
@@ -67,6 +69,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
+            'tap' => [ConfigureLogging::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),
@@ -75,6 +78,7 @@ return [
 
         'monthly' => [
             'driver' => 'monthly',
+            'tap' => [ConfigureLogging::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => 3,
@@ -104,6 +108,7 @@ return [
 
         'stderr' => [
             'driver' => 'monolog',
+            'tap' => [ConfigureLogging::class],
             'level' => env('LOG_LEVEL', 'debug'),
             'handler' => StreamHandler::class,
             'handler_with' => [
@@ -115,6 +120,7 @@ return [
 
         'syslog' => [
             'driver' => 'syslog',
+            'tap' => [ConfigureLogging::class],
             'level' => env('LOG_LEVEL', 'debug'),
             'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
             'replace_placeholders' => true,
@@ -122,6 +128,7 @@ return [
 
         'errorlog' => [
             'driver' => 'errorlog',
+            'tap' => [ConfigureLogging::class],
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],

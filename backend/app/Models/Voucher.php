@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Voucher extends Model
 {
@@ -13,5 +14,10 @@ class Voucher extends Model
     protected function casts(): array
     {
         return ['token' => 'encrypted', 'service_date' => 'immutable_date', 'redeemed_at' => 'immutable_datetime'];
+    }
+
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(OrderItem::class);
     }
 }

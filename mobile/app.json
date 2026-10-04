@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Wisata Daerah",
+    "slug": "wisata-daerah-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}

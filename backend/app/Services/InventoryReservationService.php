@@ -47,7 +47,7 @@ class InventoryReservationService
             }
 
             $this->expireBucketHolds($bucket, CarbonImmutable::now());
-            $hold->refresh();
+            $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
 
             if ($hold->state !== 'active') {
                 return $hold;
@@ -58,6 +58,47 @@ class InventoryReservationService
             $hold->update(['state' => 'confirmed']);
 
             return $hold->fresh();
+        });
+    }
+
+    /**
+     * Confirm an active hold or atomically replace an expired hold when stock
+     * is still available. This keeps late-payment recovery in one bucket lock.
+     */
+    public function confirmOrReplace(InventoryHold $hold): InventoryHold
+    {
+        return DB::transaction(function () use ($hold): InventoryHold {
+            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
+            $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
+
+            $this->expireBucketHolds($bucket, CarbonImmutable::now());
+            $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
+
+            if ($hold->state === 'confirmed') {
+                return $hold;
+            }
+
+            if ($hold->state === 'active') {
+                $bucket->decrement('held', $hold->quantity);
+                $bucket->increment('confirmed', $hold->quantity);
+                $hold->update(['state' => 'confirmed']);
+
+                return $hold->fresh();
+            }
+
+            if ($bucket->is_closed || $hold->quantity > $bucket->available()) {
+                throw new InventoryUnavailableException('Inventori tidak tersedia.');
+            }
+
+            $replacement = $bucket->holds()->create([
+                'public_id' => (string) Str::uuid(),
+                'quantity' => $hold->quantity,
+                'expires_at' => CarbonImmutable::now()->addMinutes(15),
+                'state' => 'confirmed',
+            ]);
+            $bucket->increment('confirmed', $hold->quantity);
+
+            return $replacement->fresh();
         });
     }
 
@@ -73,6 +114,23 @@ class InventoryReservationService
 
             $bucket->decrement('held', $hold->quantity);
             $hold->update(['state' => $state, 'released_at' => CarbonImmutable::now()]);
+
+            return $hold->fresh();
+        });
+    }
+
+    public function releaseConfirmed(InventoryHold $hold): InventoryHold
+    {
+        return DB::transaction(function () use ($hold): InventoryHold {
+            $bucket = InventoryBucket::query()->lockForUpdate()->findOrFail($hold->inventory_bucket_id);
+            $hold = InventoryHold::query()->lockForUpdate()->findOrFail($hold->id);
+
+            if ($hold->state !== 'confirmed') {
+                return $hold;
+            }
+
+            $bucket->decrement('confirmed', $hold->quantity);
+            $hold->update(['state' => 'released', 'released_at' => CarbonImmutable::now()]);
 
             return $hold->fresh();
         });
@@ -98,6 +156,6 @@ class InventoryReservationService
             $hold->update(['state' => 'expired', 'released_at' => $now]);
         }
 
-        $bucket->refresh();
+        $bucket->setRawAttributes(InventoryBucket::query()->lockForUpdate()->findOrFail($bucket->id)->getAttributes(), true);
     }
 }

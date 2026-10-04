@@ -1,16 +1,16 @@
 <?php
 
-use App\Payments\PaymentGateway;
-use App\Payments\SandboxPaymentGateway;
+use App\Http\Middleware\AdminAuthMiddleware;
+use App\Http\Middleware\AttachRequestId;
+use App\Http\Middleware\RequireSensitiveConfirmation;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ServiceManagementMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withBindings([
-        PaymentGateway::class => SandboxPaymentGateway::class,
-    ])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -19,6 +19,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->prepend(AttachRequestId::class);
+        $middleware->append(SecurityHeaders::class);
+        $middleware->alias([
+            'admin.platform' => AdminAuthMiddleware::class,
+            'service.management' => ServiceManagementMiddleware::class,
+            'sensitive.confirmed' => RequireSensitiveConfirmation::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -14,29 +14,29 @@ class OperationalDisputeTest extends TestCase
 
     public function test_can_list_disputes(): void
     {
+        $admin = User::factory()->create(['platform_role' => 'super_admin']);
         OperationalDispute::factory()->count(3)->create();
 
-        $response = $this->getJson('/api/v1/disputes');
+        $response = $this->actingAs($admin)->getJson('/api/v1/disputes');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data');
     }
 
     public function test_can_create_dispute(): void
     {
-        $order = Order::factory()->create();
         $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id]);
 
-        $response = $this->postJson('/api/v1/disputes', [
+        $response = $this->actingAs($user)->postJson('/api/v1/disputes', [
             'order_id' => $order->id,
-            'reporter_id' => $user->id,
             'reason' => 'Service not provided',
             'description' => 'The guide did not show up.',
         ]);
 
         $response->assertStatus(201)
-                 ->assertJsonFragment(['reason' => 'Service not provided']);
-                 
+            ->assertJsonFragment(['reason' => 'Service not provided']);
+
         $this->assertDatabaseHas('operational_disputes', [
             'order_id' => $order->id,
             'reporter_id' => $user->id,

@@ -36,3 +36,21 @@ jobs:
           extensions: mbstring, pdo_mysql
       - run: composer install --no-interaction --prefer-dist --optimize-autoloader
       - run: php artisan test
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_PUBLIC_API_URL: https://wisata.example.test/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run export:native -- --max-workers 2

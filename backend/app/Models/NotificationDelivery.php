@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\NotificationDeliveryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NotificationDelivery extends Model
 {
@@ -17,6 +18,11 @@ class NotificationDelivery extends Model
 
     protected function casts(): array
     {
-        return ['recipient' => 'encrypted', 'snapshot' => 'encrypted:array', 'delivery_log' => 'array', 'available_at' => 'datetime', 'claimed_at' => 'datetime', 'sent_at' => 'datetime'];
+        return ['recipient' => 'encrypted', 'snapshot' => 'encrypted:array', 'delivery_log' => 'array', 'available_at' => 'datetime', 'claimed_at' => 'datetime', 'sent_at' => 'datetime', 'personal_data_redacted_at' => 'datetime'];
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }

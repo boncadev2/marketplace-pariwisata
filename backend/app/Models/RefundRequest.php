@@ -14,6 +14,14 @@ class RefundRequest extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'provider_payload' => 'array',
+            'processed_at' => 'datetime',
+        ];
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);

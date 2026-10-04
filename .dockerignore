@@ -1,0 +1,15 @@
+.git
+.DS_Store
+.env
+.env.*
+!.env.example
+backend/.env
+backend/vendor
+backend/storage/logs
+backend/bootstrap/cache/*.php
+frontend/.env*
+frontend/node_modules
+frontend/.next
+coverage
+docs
+mobile

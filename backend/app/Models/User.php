@@ -25,6 +25,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(PartnerMember::class);
     }
 
+    public function dataDeletionRequests(): HasMany
+    {
+        return $this->hasMany(DataDeletionRequest::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

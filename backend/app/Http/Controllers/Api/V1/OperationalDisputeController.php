@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\OperationalDispute;
+use App\Models\Order;
 use Illuminate\Http\Request;
 
 class OperationalDisputeController extends Controller
@@ -17,12 +18,20 @@ class OperationalDisputeController extends Controller
     {
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'reporter_id' => 'required|exists:users,id',
             'reason' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        $dispute = OperationalDispute::create($validated);
+        $order = Order::query()
+            ->whereKey($validated['order_id'])
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $dispute = OperationalDispute::create([
+            ...$validated,
+            'order_id' => $order->id,
+            'reporter_id' => $request->user()->id,
+        ]);
 
         return response()->json($dispute, 201);
     }

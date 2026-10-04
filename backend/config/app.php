@@ -14,7 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-    'partner_self_registration' => (bool) env('PARTNER_SELF_REGISTRATION', false),
+    'partner_self_registration' => (bool) env('PARTNER_SELF_REGISTRATION', true),
 
     /*
     |--------------------------------------------------------------------------

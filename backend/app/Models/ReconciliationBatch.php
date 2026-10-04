@@ -9,8 +9,18 @@ class ReconciliationBatch extends Model
 {
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'date' => 'immutable_date',
+            'summary' => 'array',
+            'started_at' => 'immutable_datetime',
+            'completed_at' => 'immutable_datetime',
+        ];
+    }
+
     public function entries(): HasMany
     {
-        return $this->hasMany(ReconciliationEntry::class, 'batch_id');
+        return $this->hasMany(ReconciliationEntry::class, 'batch_id')->orderBy('id');
     }
 }

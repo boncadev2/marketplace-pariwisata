@@ -1,127 +1,292 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  Search,
+  Heart,
+  SlidersHorizontal,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+} from "lucide-react";
 import { Card } from "./Shell";
+import { EmptyState } from "./PageHeader";
 import { apiRequest } from "../lib/api";
-import { Search, Heart, Info, Loader2 } from "lucide-react";
 
-const fallback = [
-  { name: "Air Terjun Demo", slug: "air-terjun-demo", image: "https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=600&q=80" },
-  { name: "Kampung Budaya Demo", slug: "kampung-budaya-demo", image: "https://images.unsplash.com/photo-1513415564515-763d91423bdd?auto=format&fit=crop&w=600&q=80" },
-  { name: "Gunung Indah Demo", slug: "gunung-indah-demo", image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=600&q=80" },
-  { name: "Pantai Pasir Putih Demo", slug: "pantai-pasir-putih-demo", image: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=600&q=80" },
+const images = [
+  "photo-1555400038-63f5ba517a47",
+  "photo-1513415564515-763d91423bdd",
+  "photo-1588668214407-6ea9a6d8c272",
+  "photo-1570222094114-d054a817e56b",
 ];
-
-export function DestinationSearch() {
-  const [query, setQuery] = useState("");
-  const [items, setItems] = useState(fallback);
-  const [status, setStatus] = useState("Menampilkan rekomendasi destinasi");
+export function DestinationSearch({ initialQuery = "" }) {
+  const [query, setQuery] = useState(initialQuery);
+  const [region, setRegion] = useState("");
+  const [category, setCategory] = useState("");
+  const [regions, setRegions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [page, setPage] = useState(1);
+  const [revision, setRevision] = useState(0);
+  const [error, setError] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function saveDestination(item) {
-    setSaveStatus("");
-    try {
-      await apiRequest("/account/wishlist", { method: "POST", body: JSON.stringify({ destination_slug: item.slug }) });
-      setSaveStatus(`${item.name} tersimpan di wishlist akun Anda.`);
-    } catch (error) {
-      setSaveStatus(error.status === 401 ? "Masuk ke akun untuk menyimpan destinasi." : "Destinasi belum dapat disimpan. Coba lagi.");
-    }
-  }
-
+  const [loading, setLoading] = useState(true);
+  const [lookupError, setLookupError] = useState(false);
+  const requestSequence = useRef(0);
   useEffect(() => {
-    if (!query) {
-      setItems(fallback);
-      setStatus("Menampilkan rekomendasi destinasi");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
     const controller = new AbortController();
+    Promise.all([
+      apiRequest("/lookup/regions", { signal: controller.signal }),
+      apiRequest("/lookup/categories", { signal: controller.signal }),
+    ])
+      .then(([areas, types]) => {
+        setRegions(areas.data);
+        setCategories(types.data);
+        setLookupError(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLookupError(true);
+      });
+    return () => controller.abort();
+  }, [revision]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const sequence = ++requestSequence.current;
     const timeout = setTimeout(async () => {
+      setLoading(true);
+      setError("");
+      setItems([]);
+      setMeta(null);
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: "12",
+      });
+      if (query.trim()) params.set("q", query.trim());
+      if (region) params.set("region_id", region);
+      if (category) params.set("category_id", category);
+      const deadline = setTimeout(() => controller.abort(), 12000);
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/destinations?q=${encodeURIComponent(query)}`,
-          { signal: controller.signal }
-        );
-        if (!response.ok) throw new Error();
-        const payload = await response.json();
+        const payload = await apiRequest(`/destinations?${params}`, {
+          signal: controller.signal,
+        });
+        if (sequence !== requestSequence.current || controller.signal.aborted)
+          return;
         setItems(payload.data);
-        setStatus(
-          payload.data.length
-            ? `${payload.data.length} destinasi ditemukan.`
-            : "Tidak ada destinasi yang cocok."
-        );
-      } catch {
-        setItems([]);
-        setStatus("Server katalog belum tersedia. (Gunakan data demo dengan mengosongkan pencarian)");
+        setMeta(payload.meta);
+      } catch (failure) {
+        if (sequence === requestSequence.current)
+          setError(
+            failure.name === "AbortError"
+              ? "Pencarian terlalu lama. Periksa koneksi dan coba lagi."
+              : "Destinasi belum dapat dimuat. Silakan coba lagi."
+          );
       } finally {
-        setLoading(false);
+        clearTimeout(deadline);
+        if (sequence === requestSequence.current) setLoading(false);
       }
-    }, 300);
+    }, 250);
     return () => {
       controller.abort();
       clearTimeout(timeout);
     };
-  }, [query]);
-
+  }, [query, region, category, page, revision]);
+  async function saveDestination(item) {
+    try {
+      await apiRequest("/account/wishlist", {
+        method: "POST",
+        body: JSON.stringify({ destination_slug: item.slug }),
+      });
+      setSaveStatus(`${item.name} tersimpan di wishlist akun Anda.`);
+    } catch (failure) {
+      setSaveStatus(
+        failure.status === 401
+          ? "Masuk ke akun untuk menyimpan destinasi."
+          : "Destinasi belum dapat disimpan. Coba lagi."
+      );
+    }
+  }
   return (
-    <div className="space-y-8 mb-24 md:mb-12">
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-100 max-w-4xl mx-auto -mt-16 relative z-20">
-        <div className="flex gap-4">
-          <div className="flex-1 border border-gray-300 rounded-xl px-4 py-3 flex items-center focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all bg-gray-50 focus-within:bg-white">
-            <Search size={20} className="text-gray-400 mr-3" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari nama destinasi (Cth: Air Terjun...)"
-              type="search"
-              className="w-full bg-transparent outline-none text-gray-700 font-medium"
-            />
-            {loading && <Loader2 size={18} className="text-emerald-500 animate-spin" />}
-          </div>
-        </div>
-      </div>
-
-      {/* Status Messages */}
-      <div className="flex flex-col items-center justify-center gap-2">
-        {status && (
-          <p className="text-sm font-medium text-gray-500 flex items-center gap-2" aria-live="polite">
-            <Info size={16} className="text-blue-500" />
-            {status}
+    <div className="catalog-layout">
+      <aside className="catalog-filters">
+        <h2>
+          <SlidersHorizontal size={17} /> Sesuaikan perjalanan
+        </h2>
+        <p>Temukan tempat yang Anda cari.</p>
+        <label htmlFor="destination-region">Wilayah</label>
+        <select
+          id="destination-region"
+          value={region}
+          onChange={(event) => {
+            setRegion(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Semua wilayah</option>
+          {regions.map((item) => (
+            <option value={item.id} key={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="destination-category">Jenis wisata</label>
+        <select
+          id="destination-category"
+          value={category}
+          onChange={(event) => {
+            setCategory(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Semua kategori</option>
+          {categories.map((item) => (
+            <option value={item.id} key={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        {lookupError && (
+          <p role="status">
+            Filter belum dapat dimuat.{" "}
+            <button
+              className="text-blue-700 underline"
+              onClick={() => setRevision((value) => value + 1)}
+            >
+              Coba lagi
+            </button>
           </p>
         )}
+        <button
+          type="button"
+          className="filter-reset"
+          onClick={() => {
+            setQuery("");
+            setRegion("");
+            setCategory("");
+            setPage(1);
+          }}
+        >
+          Reset pencarian
+        </button>
+        <div className="filter-note">
+          <Compass size={24} />
+          <strong>Kenali daerah lebih dekat.</strong>
+          <p>Informasi destinasi membantu Anda merencanakan kunjungan.</p>
+        </div>
+      </aside>
+      <section className="catalog-results" aria-busy={loading}>
+        <div className="catalog-search">
+          <Search size={21} />
+          <label className="sr-only" htmlFor="destination-search">
+            Cari nama destinasi
+          </label>
+          <input
+            id="destination-search"
+            type="search"
+            maxLength={100}
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Cari nama destinasi…"
+          />
+          {loading && (
+            <Loader2 className="animate-spin text-blue-600" size={18} />
+          )}
+        </div>
+        <div className="catalog-results-heading">
+          <h2>
+            {query.trim()
+              ? `Hasil untuk “${query.trim()}”`
+              : "Destinasi untuk dijelajahi"}
+          </h2>
+          <span aria-live="polite">
+            {meta ? `${meta.total} destinasi` : loading ? "Memuat…" : ""}
+          </span>
+        </div>
         {saveStatus && (
-          <p className="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100" role="status">
+          <p role="status" className="catalog-message">
             {saveStatus}
           </p>
         )}
-      </div>
-
-      {/* Grid of Results */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {items.map((item, index) => (
-          <Card
-            key={item.id ?? item.slug}
-            title={item.name}
-            meta="Katalog destinasi"
-            image={item.image || fallback[index % fallback.length].image}
-            href={`/destinasi/${item.slug}`}
-          >
-            {item.id && (
-              <button 
-                type="button" 
-                onClick={(e) => { e.preventDefault(); saveDestination(item); }}
-                className="bg-emerald-50 text-emerald-600 p-2 rounded-full hover:bg-emerald-600 hover:text-white transition-colors"
-                title="Simpan ke wishlist"
+        {error ? (
+          <div className="empty-state">
+            <h2>Koneksi belum tersedia</h2>
+            <p role="status">{error}</p>
+            <button
+              className="ui-button"
+              onClick={() => setRevision((value) => value + 1)}
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="catalog-grid">
+            {[0, 1, 2].map((key) => (
+              <div className="catalog-skeleton" key={key}>
+                <div />
+                <span />
+                <span />
+              </div>
+            ))}
+          </div>
+        ) : !items.length ? (
+          <EmptyState
+            title="Belum ada destinasi yang cocok"
+            description="Coba nama tempat lain atau ubah wilayah dan kategori wisata."
+          />
+        ) : (
+          <div className="catalog-grid">
+            {items.map((item, index) => (
+              <Card
+                key={item.id}
+                illustration={item.photos?.[0]?.is_illustration ?? true}
+                title={item.name}
+                meta={item.region?.name || "Destinasi daerah"}
+                image={
+                  item.photos?.[0]?.url ||
+                  `https://images.unsplash.com/${images[index % images.length]}?auto=format&fit=crop&w=700&q=85`
+                }
+                href={`/destinasi/${item.slug}`}
               >
-                <Heart size={18} />
-              </button>
-            )}
-          </Card>
-        ))}
-      </div>
+                <button
+                  type="button"
+                  onClick={() => saveDestination(item)}
+                  className="wishlist-button"
+                  aria-label={`Simpan ${item.name} ke wishlist`}
+                >
+                  <Heart size={17} />
+                </button>
+              </Card>
+            ))}
+          </div>
+        )}
+        {meta && meta.total > meta.per_page && (
+          <nav className="catalog-pagination" aria-label="Halaman hasil">
+            <button
+              type="button"
+              className="ui-button ui-button-outline"
+              disabled={loading || page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              <ChevronLeft size={16} /> Sebelumnya
+            </button>
+            <span>
+              Halaman {page} / {Math.ceil(meta.total / meta.per_page)}
+            </span>
+            <button
+              type="button"
+              className="ui-button ui-button-outline"
+              disabled={loading || page * meta.per_page >= meta.total}
+              onClick={() => setPage(page + 1)}
+            >
+              Berikutnya <ChevronRight size={16} />
+            </button>
+          </nav>
+        )}
+      </section>
     </div>
   );
 }

@@ -6,12 +6,295 @@ info:
 servers:
   - url: /api/v1
 paths:
-  /health:
+  /payments/gateway-status:
     get:
-      summary: Status API versi 1
+      summary: Status konfigurasi gateway pembayaran tanpa membuka kredensial
       responses:
         '200':
-          description: API siap menerima request
+          description: data provider, mode sandbox dan ready boolean (bukan uji autentikasi provider)
+  /webhooks/payments/midtrans:
+    post:
+      summary: Terima notifikasi Midtrans sandbox dengan signature dan validasi status API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_id, status_code, gross_amount, transaction_id, transaction_status, signature_key]
+              properties:
+                order_id: {type: string, maxLength: 50}
+                status_code: {type: string, pattern: '^[0-9]{3}$'}
+                gross_amount: {type: string, example: '125000.00'}
+                transaction_id: {type: string, maxLength: 100}
+                transaction_status: {type: string, maxLength: 32}
+                signature_key: {type: string, minLength: 128, maxLength: 128}
+                currency: {type: string, enum: [IDR]}
+      responses:
+        '200':
+          description: Notifikasi diterima; unknown/refund tidak otomatis dibayar
+        '401':
+          description: Signature tidak valid
+        '404':
+          description: Payment attempt Midtrans tidak ditemukan
+        '409':
+          description: Transaksi, nominal atau currency tidak cocok
+        '503':
+          description: Gateway belum siap atau status belum tersedia
+  /partner/cross-village-proposals:
+    get:
+      summary: Daftar proposal porsi mitra yang dikelola pengguna
+      description: Owner/manager aktif dari partner approved, email terverifikasi, local/testing. Maksimal 20 produk per halaman.
+      parameters:
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: data produk paket scoped, memberships ID/nama, meta current_page/last_page
+        '401':
+          description: Login diperlukan
+        '403':
+          description: Email belum terverifikasi
+        '503':
+          description: Hanya local/testing
+  /products/{slug}/cross-village-agreement:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema: {type: string}
+    get:
+      summary: Baca revisi porsi dan keputusan mitra
+      description: Mitra owner/manager aktif terkait atau admin terverifikasi dapat membaca.
+      responses:
+        '200':
+          description: shares, version, revision, agreements, all_accepted, product_name dan simulation_only
+        '404':
+          description: Proposal tidak ada atau tidak berhak membaca
+        '503':
+          description: Hanya local/testing
+    post:
+      summary: Setujui atau tolak porsi untuk mitra yang diwakili
+      description: Admin tanpa membership owner/manager aktif tidak dapat memutuskan atas nama mitra. Keputusan sama idempoten; perubahan keputusan diaudit.
+      parameters:
+        - name: X-Sensitive-Confirmation
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [partner_id, version, decision, reason]
+              properties:
+                partner_id: {type: integer}
+                version: {type: string, minLength: 64, maxLength: 64}
+                decision: {type: string, enum: [accepted, rejected]}
+                reason: {type: string, minLength: 5, maxLength: 500}
+      responses:
+        '200':
+          description: Konfigurasi dan status keputusan revisi terkini
+        '404':
+          description: Membership atau mitra proposal tidak sesuai
+        '409':
+          description: Porsi atau revisi berubah; muat ulang
+        '422':
+          description: Input atau porsi tidak valid
+        '423':
+          description: Konfirmasi kata sandi diperlukan
+        '503':
+          description: Hanya local/testing
+  /orders/{public_id}/cross-village-snapshot:
+    parameters:
+      - name: public_id
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      summary: Baca snapshot pembagian pesanan sandbox untuk admin lokal
+      responses:
+        '200':
+          description: data snapshot atau null, serta order_status terkini
+        '401':
+          description: Login diperlukan
+        '403':
+          description: Admin terverifikasi diperlukan
+        '404':
+          description: Pesanan tidak ditemukan
+        '503':
+          description: Hanya local/testing
+    post:
+      summary: Simpan snapshot dan sub-order simulation_only secara idempoten
+      description: Pesanan paid IDR satu item paket dengan pembayaran succeeded sandbox. Memakai uang pesanan tersimpan dan konfigurasi pada saat simulasi; tanpa perubahan ledger atau payout.
+      parameters:
+        - name: X-Sensitive-Confirmation
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, reason]
+              properties:
+                version: {type: string, minLength: 64, maxLength: 64}
+                reason: {type: string, minLength: 5, maxLength: 500}
+      responses:
+        '200':
+          description: Snapshot simulation_only tersimpan; retry versi yang sama mengembalikan snapshot pertama
+        '409':
+          description: Versi berubah atau terdapat snapshot/sub-order berbeda
+        '422':
+          description: Pesanan, pembayaran sandbox atau alokasi tidak valid
+        '423':
+          description: Konfirmasi kata sandi diperlukan
+        '503':
+          description: Hanya local/testing
+  /products/{slug}/cross-village-configuration:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema: {type: string}
+    get:
+      summary: Baca porsi simulasi dan kandidat mitra desa untuk admin lokal
+      parameters:
+        - name: search
+          in: query
+          schema: {type: string, maxLength: 100}
+      responses:
+        '200':
+          description: shares, version, owner_partner_id, product_name dan maksimal 30 candidates approved dari desa
+        '401':
+          description: Login diperlukan
+        '403':
+          description: Admin terverifikasi diperlukan
+        '503':
+          description: Hanya local/testing
+    put:
+      summary: Simpan porsi simulasi dengan audit dan pemeriksaan versi
+      parameters:
+        - name: X-Sensitive-Confirmation
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, reason, shares]
+              properties:
+                version: {type: string, minLength: 64, maxLength: 64}
+                reason: {type: string, minLength: 5, maxLength: 500}
+                shares:
+                  type: array
+                  minItems: 2
+                  maxItems: 20
+                  items:
+                    type: object
+                    required: [partner_id, revenue_share_percentage, is_primary_partner]
+                    properties:
+                      partner_id: {type: integer}
+                      revenue_share_percentage: {type: string, example: '50.00'}
+                      is_primary_partner: {type: boolean}
+      responses:
+        '200':
+          description: Porsi dan version terbaru; perubahan dicatat pada audit
+        '409':
+          description: Versi konfigurasi berubah; muat ulang
+        '422':
+          description: Porsi atau mitra tidak valid; perubahan dirollback
+        '423':
+          description: Konfirmasi kata sandi diperlukan
+        '503':
+          description: Hanya local/testing
+  /products/{slug}/cross-village-quote:
+    get:
+      summary: Simulasi alokasi paket lintas desa untuk admin lokal
+      description: Memerlukan admin super_admin dengan email terverifikasi. Local/testing saja; tidak membuat transaksi. Paket published per_person dalam IDR, porsi positif total 100%, mitra approved dari minimal dua desa.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: {type: string}
+        - name: visit_date
+          in: query
+          required: true
+          schema: {type: string, format: date}
+        - name: quantity
+          in: query
+          required: true
+          schema: {type: integer, minimum: 1, maximum: 100}
+      responses:
+        '200':
+          description: Harga server, komisi, pendapatan mitra dan allocations dalam integer rupiah; simulation_only true.
+        '401':
+          description: Login diperlukan
+        '403':
+          description: Admin terverifikasi diperlukan
+        '404':
+          description: Produk atau paket tidak tersedia
+        '422':
+          description: Input atau pemetaan porsi tidak valid
+        '503':
+          description: Simulasi dinonaktifkan di luar local/testing
+  /health/dependencies:
+    get:
+      summary: Readiness dependency aplikasi
+      responses:
+        '200':
+          description: Seluruh dependency wajib sehat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /pilot/checkout-status:
+    get:
+      summary: Membaca status checkout pilot
+      responses:
+        '200':
+          description: Status checkout aktif saat ini
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PilotCheckoutStatusResponse' }
+    patch:
+      summary: Membuka atau menutup checkout pilot
+      description: Hanya super admin dengan konfirmasi kata sandi terbaru.
+      parameters:
+        - name: X-Sensitive-Confirmation
+          in: header
+          required: true
+          schema: { type: string, minLength: 40 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled, reason]
+              properties:
+                enabled: { type: boolean }
+                reason: { type: string, minLength: 5, maxLength: 500 }
+      responses:
+        '200':
+          description: Kontrol checkout diperbarui dan diaudit
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PilotCheckoutStatusResponse' }
+        '401': { description: Belum terautentikasi }
+        '403': { description: Bukan super admin }
+        '423': { description: Konfirmasi kata sandi diperlukan }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Satu atau lebih dependency wajib mengalami degradasi
           content:
             application/json:
               schema:
@@ -25,6 +308,12 @@ paths:
         - name: q
           in: query
           schema: { type: string, maxLength: 100 }
+        - name: region_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: category_id
+          in: query
+          schema: { type: integer, minimum: 1 }
       responses:
         '200':
           description: Daftar terhalaman
@@ -34,6 +323,30 @@ paths:
                 $ref: '#/components/schemas/PaginatedDestinations'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /destinations/{slug}:
+    get:
+      summary: Detail destinasi terbit untuk web dan mobile
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Informasi publik destinasi tanpa data privat mitra
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/DestinationDetail' }
+        '304':
+          description: Konten sesuai If-None-Match
+        '404':
+          description: Destinasi tidak tersedia, draft, atau dihapus
   /products/{slug}/quote:
     get:
       summary: Kutipan harga produk publik
@@ -61,6 +374,32 @@ paths:
           description: Produk tidak tersedia untuk publik
         '422':
           $ref: '#/components/responses/ValidationError'
+  /products:
+    get:
+      summary: Daftar produk terbit untuk pemilihan checkout
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: type
+          in: query
+          schema: { type: string, enum: [ticket, package, lodging, culinary] }
+      responses:
+        '200':
+          description: Produk publik terhalaman tanpa data privat mitra
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PublicProduct' }
+                  meta: { type: object }
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /products/{slug}/inventory:
     get:
       summary: Kalender inventori produk publik
@@ -84,6 +423,268 @@ paths:
           description: Produk tidak tersedia untuk publik
         '422':
           $ref: '#/components/responses/ValidationError'
+  /checkout:
+    post:
+      summary: Membuat order, hold, dan payment attempt sandbox secara idempoten
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 16 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckoutRequest' }
+      responses:
+        '201':
+          description: Order baru beserta instruksi pembayaran sandbox
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutResponse' }
+        '200':
+          description: Hasil order idempoten yang sudah ada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutResponse' }
+        '409':
+          description: Stok tidak tersedia atau key dipakai untuk payload berbeda
+        '503':
+          description: Checkout ditutup oleh operator pilot
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /lodging/rooms:
+    get:
+      summary: Katalog reservasi lodging aktif
+      parameters:
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Paginator 20 item dalam data dan meta.sandbox_reservations_enabled
+  /lodging/quote:
+    get:
+      summary: Quote reservasi lodging dengan harga server
+      description: Harga string desimal dua digit, currency IDR; tidak mengubah inventori.
+      parameters:
+        - name: room_type_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - name: check_in
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: check_out
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: quantity
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 10 }
+        - name: guests
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Total harga server dan rincian reservasi; Cache-Control no-store
+        '404':
+          description: Kamar atau slot tidak aktif
+        '422':
+          description: Rincian tidak valid atau inventori tidak tersedia
+  /account/lodging-bookings:
+    get:
+      summary: Daftar reservasi lodging milik akun
+      description: Membutuhkan sesi Sanctum atau token; respons private no-store.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Paginator reservasi akun, 20 item per halaman
+        '401':
+          description: Autentikasi diperlukan
+    post:
+      summary: Membuat reservasi simulasi lodging
+      description: Hanya local/testing, akun terautentikasi. Harga harus cocok dengan quote; status reserved_sandbox, tanpa pembayaran.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 16, maxLength: 100, pattern: '^[A-Za-z0-9_-]+$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/LodgingStay'
+                - type: object
+                  required: [expected_total_price]
+                  properties:
+                    expected_total_price: { type: string, pattern: '^[0-9]{1,13}\.[0-9]{2}$' }
+      responses:
+        '201':
+          description: Reservasi simulasi baru dalam data
+        '200':
+          description: Replay idempoten mengembalikan reservasi awal, termasuk status cancelled
+        '401':
+          description: Autentikasi diperlukan
+        '404':
+          description: Kamar atau slot tidak aktif
+        '409':
+          description: Konflik payload idempotensi atau harga berubah
+        '422':
+          description: Input tidak valid atau kuota tidak cukup
+        '503':
+          description: Simulasi dilarang di luar lingkungan local/testing
+  /account/lodging-bookings/{booking}/cancel:
+    post:
+      summary: Membatalkan reservasi simulasi lodging dan mengembalikan inventori sekali
+      description: Akun terautentikasi; hanya reservasi sendiri, hanya local/testing.
+      parameters:
+        - name: booking
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Reservasi dibatalkan atau sudah dibatalkan sebelumnya
+        '401':
+          description: Autentikasi diperlukan
+        '404':
+          description: Reservasi tidak ditemukan atau bukan milik akun
+        '409':
+          description: Status atau inventori tidak konsisten
+        '503':
+          description: Simulasi dilarang di luar local/testing
+  /culinary/slots:
+    get:
+      summary: Katalog reservasi culinary aktif
+      parameters:
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Paginator 20 item dalam data dan meta.sandbox_reservations_enabled
+  /culinary/quote:
+    get:
+      summary: Quote reservasi culinary dengan harga server
+      description: Harga string desimal dua digit, currency IDR; tidak mengubah inventori.
+      parameters:
+        - name: meal_slot_id
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - name: quantity
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Total harga server dan rincian reservasi; Cache-Control no-store
+        '404':
+          description: Kamar atau slot tidak aktif
+        '422':
+          description: Rincian tidak valid atau inventori tidak tersedia
+  /account/meal-bookings:
+    get:
+      summary: Daftar reservasi culinary milik akun
+      description: Membutuhkan sesi Sanctum atau token; respons private no-store.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Paginator reservasi akun, 20 item per halaman
+        '401':
+          description: Autentikasi diperlukan
+    post:
+      summary: Membuat reservasi simulasi culinary
+      description: Hanya local/testing, akun terautentikasi. Harga harus cocok dengan quote; status reserved_sandbox, tanpa pembayaran.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 16, maxLength: 100, pattern: '^[A-Za-z0-9_-]+$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/MealSelection'
+                - type: object
+                  required: [expected_total_price]
+                  properties:
+                    expected_total_price: { type: string, pattern: '^[0-9]{1,13}\.[0-9]{2}$' }
+      responses:
+        '201':
+          description: Reservasi simulasi baru dalam data
+        '200':
+          description: Replay idempoten mengembalikan reservasi awal, termasuk status cancelled
+        '401':
+          description: Autentikasi diperlukan
+        '404':
+          description: Kamar atau slot tidak aktif
+        '409':
+          description: Konflik payload idempotensi atau harga berubah
+        '422':
+          description: Input tidak valid atau kuota tidak cukup
+        '503':
+          description: Simulasi dilarang di luar lingkungan local/testing
+  /account/meal-bookings/{booking}/cancel:
+    post:
+      summary: Membatalkan reservasi simulasi culinary dan mengembalikan inventori sekali
+      description: Akun terautentikasi; hanya reservasi sendiri, hanya local/testing.
+      parameters:
+        - name: booking
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Reservasi dibatalkan atau sudah dibatalkan sebelumnya
+        '401':
+          description: Autentikasi diperlukan
+        '404':
+          description: Reservasi tidak ditemukan atau bukan milik akun
+        '409':
+          description: Status atau inventori tidak konsisten
+        '503':
+          description: Simulasi dilarang di luar local/testing
+  /promos/quote:
+    get:
+      summary: Quote kupon checkout sandbox dari harga produk server
+      description: Memerlukan akun dengan email terverifikasi. Hanya local/testing. Tidak mengurangi kuota promo atau stok.
+      parameters:
+        - name: product_slug
+          in: query
+          required: true
+          schema: { type: string }
+        - name: visit_date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: quantity
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: coupon_code
+          in: query
+          required: true
+          schema: { type: string, maxLength: 100 }
+      responses:
+        '200':
+          description: Harga asli, subtotal, discount, total bersih dalam integer IDR, dan coupon_code; Cache-Control no-store
+        '401':
+          description: Autentikasi diperlukan
+        '403':
+          description: Email belum terverifikasi
+        '404':
+          description: Produk tidak dipublikasikan
+        '422':
+          description: Kupon tidak berlaku, kuota habis, minimum belanja belum tercapai, atau mata uang tidak didukung
+        '503':
+          description: Promo dinonaktifkan di luar local/testing
 components:
   parameters:
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
@@ -97,17 +698,51 @@ components:
   schemas:
     HealthResponse:
       type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        checks:
+          type: object
+          additionalProperties: { type: boolean }
+    PilotCheckoutStatusResponse:
+      type: object
       required: [data]
       properties:
-        data: { type: object, properties: { status: { type: string, example: ok } } }
+        data:
+          type: object
+          required: [enabled]
+          properties:
+            enabled: { type: boolean }
+            reason: { type: [string, 'null'] }
+            changed_at: { type: [string, 'null'], format: date-time }
     Destination:
       type: object
       required: [id, name, slug, publication_status]
       properties:
-        id: { type: string, format: uuid }
+        id: { type: integer }
         name: { type: string }
         slug: { type: string }
         publication_status: { type: string, enum: [published] }
+        summary: { type: [string, 'null'] }
+        region:
+          type: [object, 'null']
+          properties:
+            id: { type: integer }
+            name: { type: [string, 'null'] }
+        category:
+          type: [object, 'null']
+          properties:
+            id: { type: integer }
+            name: { type: [string, 'null'] }
+    DestinationDetail:
+      allOf:
+        - $ref: '#/components/schemas/Destination'
+        - type: object
+          required: [description, latitude, longitude]
+          properties:
+            description: { type: [string, 'null'] }
+            latitude: { type: [number, 'null'] }
+            longitude: { type: [number, 'null'] }
     PaginatedDestinations:
       type: object
       required: [data, meta]
@@ -133,3 +768,71 @@ components:
             currency: { type: string, example: IDR }
             quantity: { type: integer, example: 3 }
             total: { type: integer, example: 225000 }
+    PublicProduct:
+      type: object
+      required: [id, name, slug, type, currency, base_price]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        type: { type: string }
+        currency: { type: string, example: IDR }
+        base_price: { type: integer }
+        destination_name: { type: [string, 'null'] }
+    CheckoutRequest:
+      type: object
+      required: [product_slug, visit_date, quantity, customer_name, customer_email]
+      properties:
+        product_slug: { type: string }
+        visit_date: { type: string, format: date }
+        quantity: { type: integer, minimum: 1, maximum: 100 }
+        customer_name: { type: string, maxLength: 120 }
+        customer_email: { type: string, format: email, maxLength: 255 }
+        coupon_code: { type: [string, 'null'], maxLength: 100, description: Opsional, sandbox saja; akun terverifikasi dan email pemesan harus sama dengan akun. }
+        expected_total: { type: [integer, 'null'], minimum: 1, description: Wajib jika memakai coupon_code atau cross_village_version; harus sama dengan total quote net. }
+        cross_village_version: { type: [string, 'null'], minLength: 64, maxLength: 64, description: Wajib untuk paket dengan pemetaan lintas desa; version dari quote publik, sandbox local/testing dan seluruh persetujuan lengkap. }
+    CheckoutResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [order_id, status, total, currency, payment_status]
+          properties:
+            order_id: { type: string, format: uuid }
+            status: { type: string }
+            total: { type: integer }
+            currency: { type: string, example: IDR }
+            guest_access_token: { type: [string, 'null'] }
+            payment_provider: { type: string, enum: [sandbox, midtrans_sandbox] }
+            payment_status: { type: string, enum: [created, uncertain, pending, succeeded, failed] }
+            checkout_url: { type: [string, 'null'], format: uri }
+            cross_village:
+              type: [object, 'null']
+              properties:
+                simulation_only: {type: boolean, const: true}
+                revision: {type: integer}
+                basis: {type: string, enum: [configuration_at_checkout, configuration_at_simulation]}
+            promotion:
+              type: [object, 'null']
+              properties:
+                coupon_code: { type: string }
+                subtotal: { type: integer }
+                discount: { type: integer }
+                total: { type: integer }
+    LodgingStay:
+      type: object
+      required: [room_type_id, check_in, check_out, quantity, guests]
+      properties:
+        room_type_id: { type: integer, minimum: 1 }
+        check_in: { type: string, format: date }
+        check_out: { type: string, format: date }
+        quantity: { type: integer, minimum: 1, maximum: 10 }
+        guests: { type: integer, minimum: 1, maximum: 100 }
+      description: Check-out eksklusif, 1–30 malam; semua stok/tarif malam wajib tersedia, jumlah tamu dibatasi kapasitas kamar.
+    MealSelection:
+      type: object
+      required: [meal_slot_id, quantity]
+      properties:
+        meal_slot_id: { type: integer, minimum: 1 }
+        quantity: { type: integer, minimum: 1, maximum: 100 }

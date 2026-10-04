@@ -81,6 +81,24 @@ class PaymentWebhookTest extends TestCase
         $this->assertSame('paid', $attempt->order->fresh()->status);
     }
 
+    public function test_pending_event_after_paid_is_rejected_without_downgrading_order(): void
+    {
+        $attempt = $this->attempt();
+        $payload = ['event_key' => 'success-before-pending', 'provider_reference' => $attempt->provider_reference, 'status' => 'succeeded', 'amount' => 125000, 'currency' => 'IDR'];
+        $headers = ['X-Sandbox-Signature' => 'test-secret'];
+        $this->postJson('/api/v1/webhooks/payments/sandbox', $payload, $headers)->assertOk();
+
+        $response = $this->postJson('/api/v1/webhooks/payments/sandbox', array_replace($payload, [
+            'event_key' => 'late-pending-event',
+            'status' => 'pending',
+        ]), $headers);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('status');
+        $this->assertSame('succeeded', $attempt->fresh()->status);
+        $this->assertSame('paid', $attempt->order->fresh()->status);
+        $this->assertDatabaseCount('payment_webhook_events', 1);
+    }
+
     public function test_wrong_amount_is_rejected_without_changing_order(): void
     {
         $attempt = $this->attempt();

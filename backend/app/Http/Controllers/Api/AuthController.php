@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ServiceManagementAccess;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +36,9 @@ class AuthController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
-        return response()->json(['data' => $user]);
+        $operational = $user->platform_role === 'super_admin' || $user->partnerMemberships()->where('is_active', true)->exists();
+
+        return response()->json(['data' => $user, 'redirect_to' => $operational ? '/dashboard' : '/akun'])->header('Cache-Control', 'private, no-store');
     }
 
     public function logout(Request $request): JsonResponse
@@ -49,7 +52,7 @@ class AuthController extends Controller
 
     public function profile(Request $request): JsonResponse
     {
-        return response()->json(['data' => $request->user()]);
+        return response()->json(['data' => [...$request->user()->toArray(), 'can_manage_services' => ServiceManagementAccess::admin($request->user()) || ServiceManagementAccess::partnerIds($request->user()) !== []]])->header('Cache-Control', 'private, no-store');
     }
 
     public function updateProfile(Request $request): JsonResponse

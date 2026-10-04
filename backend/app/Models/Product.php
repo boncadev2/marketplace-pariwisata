@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PublicCatalogCache;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,22 @@ class Product extends Model
     use SoftDeletes;
 
     protected $guarded = [];
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(TravelPhoto::class)->orderBy('id');
+    }
+
+    protected static function booted(): void
+    {
+        $invalidate = function (): void {
+            app(PublicCatalogCache::class)->bumpProducts();
+        };
+
+        static::saved($invalidate);
+        static::deleted($invalidate);
+        static::restored($invalidate);
+    }
 
     public function priceRules(): HasMany
     {

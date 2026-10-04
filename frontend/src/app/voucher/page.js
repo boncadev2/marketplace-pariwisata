@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { PageHeader } from "../../components/PageHeader";
 import { Shell } from "../../components/Shell";
 import { apiRequest } from "../../lib/api";
 
@@ -64,7 +65,10 @@ export default function VoucherPage() {
           setMessage("Voucher belum tersedia untuk status pesanan ini.");
       })
       .catch(() => {
-        if (active) setMessage("Voucher akun tidak dapat dibuka. Masuk kembali atau gunakan kode akses pesanan.");
+        if (active)
+          setMessage(
+            "Voucher akun tidak dapat dibuka. Masuk kembali atau gunakan kode akses pesanan."
+          );
       });
     return () => {
       active = false;
@@ -95,10 +99,17 @@ export default function VoucherPage() {
   }
   return (
     <Shell>
-      <section className="page-intro">
-        <h1>Voucher perjalanan</h1>
+      <PageHeader
+        eyebrow="Voucher perjalanan"
+        title="Perjalanan Anda, siap di tangan."
+        description="Buka voucher dari akun atau gunakan nomor pesanan dan kode akses tamu."
+        compact
+      />
+      <section className="page-intro voucher-panel">
+        <h2 className="text-xl font-bold mb-3">Buka voucher pesanan</h2>
         <p>
-          Voucher pesanan yang sudah ditautkan dapat dibuka dari akun. Untuk pesanan tamu, masukkan nomor pesanan dan kode akses dari checkout.
+          Voucher pesanan yang sudah ditautkan dapat dibuka dari akun. Untuk
+          pesanan tamu, masukkan nomor pesanan dan kode akses dari checkout.
         </p>
         <form className="search-panel" onSubmit={open}>
           <label>

@@ -16,12 +16,12 @@ class InventoryHoldController extends Controller
 
         $data = $request->validate([
             'from' => ['required', 'date_format:Y-m-d'],
-            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from', 'before_or_equal:'.now()->addMonths(3)->toDateString()],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from', 'before_or_equal:'.now('Asia/Jakarta')->addMonths(3)->toDateString()],
         ]);
 
         $buckets = InventoryBucket::query()
             ->where('product_id', $product->id)
-            ->whereBetween('service_date', [$data['from'], $data['to']])
+            ->whereDate('service_date', '>=', $data['from'])->whereDate('service_date', '<=', $data['to'])
             ->orderBy('service_date')
             ->orderBy('session_key')
             ->get()
@@ -32,6 +32,8 @@ class InventoryHoldController extends Controller
                 'is_closed' => $bucket->is_closed,
             ]);
 
-        return response()->json(['data' => $buckets]);
+        return response()
+            ->json(['data' => $buckets])
+            ->header('Cache-Control', 'no-store');
     }
 }

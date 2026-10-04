@@ -2,7 +2,7 @@
 
 Marketplace pariwisata daerah dengan frontend Next.js JavaScript dan backend Laravel API. Implementasi dilakukan bertahap sesuai `docs/PROGRESS.md`.
 
-Status saat ini: Fase 02 sedang diimplementasikan. Frontend memakai JavaScript, bukan TypeScript.
+Status saat ini: reservasi simulasi penginapan Fase 34, kuliner Fase 35, promo checkout sandbox Fase 36, dan alur lintas desa sandbox Fase 37 terimplementasi serta diuji lokal. Adapter Midtrans Snap sandbox tersedia; aktivasi dan UAT langsung memerlukan Server Key sandbox serta webhook HTTPS publik. Integrasi pembayaran dan operasional kedua fase masih terbuka. Go live pilot tetap NO GO sampai blocker bisnis dan UAT ditutup. Katalog mobile Expo Fase 38–39 kini mengambil destinasi, pencarian, filter, dan detail dari API; login native serta beta perangkat masih terbuka. Frontend memakai JavaScript, bukan TypeScript.
 
 ## Dokumen
 

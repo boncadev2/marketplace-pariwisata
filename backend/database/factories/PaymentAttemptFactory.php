@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Order;
 use App\Models\PaymentAttempt;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,12 @@ class PaymentAttemptFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'order_id' => Order::factory(),
+            'provider' => 'sandbox',
+            'provider_reference' => fake()->unique()->uuid(),
+            'status' => 'pending',
+            'currency' => 'IDR',
+            'amount' => 100,
         ];
     }
 }

@@ -10,6 +10,16 @@
 | P0 | Voucher, notifikasi, dukungan, refund, keuangan, settlement, operasional, rekonsiliasi | 21–28 |
 | P0 | Keamanan, performa, UAT, deployment, backup, observabilitas, dan pilot | 29–33 |
 
+### Blocker Go Live Fase 33
+
+| Prioritas | Pekerjaan terbuka | Status |
+| --- | --- | --- |
+| P0 | Keputusan kabupaten, badan pengelola, mitra, konten berizin, dan penanggung jawab | Menunggu pemilik bisnis |
+| P0 | Provider payment/refund/payout production dan pengujian T13 | Menunggu finance/legal dan implementasi provider |
+| P0 | UAT staging lima peran serta simulasi operator tanpa developer | Belum dijalankan |
+| P0 | Legal privacy/retention dan kontrol lampiran pelanggan | Belum disetujui |
+| P0 | Rekonsiliasi settlement nyata dan transaksi kecil terotorisasi | Belum boleh dijalankan |
+
 ## Sesudah Pilot
 
 | Prioritas | Kelompok kerja | Fase |

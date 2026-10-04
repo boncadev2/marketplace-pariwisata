@@ -7,9 +7,9 @@ use App\Models\InventoryHold;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentWebhookEvent;
 use App\Services\InventoryReservationService;
+use App\Services\LedgerService;
 use App\Services\TransactionOutbox;
 use App\Services\VoucherService;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -43,26 +43,21 @@ class ProcessPaymentWebhook implements ShouldQueue
                 $hold = InventoryHold::find($item?->snapshot['inventory_hold_id'] ?? null);
                 $allocated = false;
                 if ($hold !== null) {
-                    $inventory = app(InventoryReservationService::class);
-                    $hold = $inventory->confirm($hold);
-                    if ($hold->state !== 'confirmed') {
-                        try {
-                            $replacement = $inventory->reserve($hold->bucket, $hold->quantity, CarbonImmutable::now()->addMinutes(15));
-                            $replacement = $inventory->confirm($replacement);
+                    try {
+                        $replacement = app(InventoryReservationService::class)->confirmOrReplace($hold);
+                        if ($replacement->id !== $hold->id) {
                             $item->update(['snapshot' => array_replace($item->snapshot, ['inventory_hold_id' => $replacement->id])]);
-                            $allocated = $replacement->state === 'confirmed';
-                        } catch (InventoryUnavailableException) {
-                            $allocated = false;
                         }
-                    } else {
-                        $allocated = true;
+                        $allocated = $replacement->state === 'confirmed';
+                    } catch (InventoryUnavailableException) {
+                        $allocated = false;
                     }
                 }
                 $order->update(['status' => $allocated ? 'paid' : 'payment_exception']);
             }
             $event->update(['processed_at' => now()]);
             if ($order->fresh()->status === 'paid') {
-                app(\App\Services\LedgerService::class)->recordPayment($order);
+                app(LedgerService::class)->recordPayment($order);
                 app(VoucherService::class)->issue($order);
                 app(TransactionOutbox::class)->record($order, 'confirmation', 'paid', 'Status pembayaran: berhasil.');
                 app(TransactionOutbox::class)->record($order, 'voucher', 'issued', 'Gunakan nomor pesanan dan kode akses yang disimpan saat checkout.');

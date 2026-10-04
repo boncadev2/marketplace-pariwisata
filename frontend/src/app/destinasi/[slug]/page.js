@@ -1,55 +1,46 @@
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { DestinationDetail } from "../../../components/DestinationDetail";
+import { EmptyState } from "../../../components/PageHeader";
 import { Shell } from "../../../components/Shell";
 
 export default async function Page({ params }) {
   const { slug } = await params;
-  const destination = {
-    name: slug.replaceAll("-", " "),
-    latitude: -6.914744,
-    longitude: 107.60981,
-  };
-  const navigation = `https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}`;
-  return (
-    <Shell>
-      <section className="detail-layout">
-        <div
-          className="hero-placeholder"
-          role="img"
-          aria-label="Placeholder galeri destinasi"
+  let response;
+  try {
+    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    response = await fetch(
+      `${backend}/api/v1/destinations/${encodeURIComponent(slug)}`,
+      {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+  } catch {
+    return (
+      <Shell>
+        <EmptyState
+          headingLevel="h1"
+          title="Destinasi belum dapat dimuat"
+          description="Layanan katalog belum dapat dihubungi. Kembali ke pencarian dan coba lagi."
+          href="/destinasi"
+          label="Kembali ke pencarian"
         />
-        <div>
-          <p className="eyebrow">Data demonstrasi</p>
-          <h1>{destination.name}</h1>
-          <p>
-            Detail destinasi akan memakai data katalog terbit dari API. Peta
-            bersifat opsional dan pencarian tetap dapat digunakan tanpa akses
-            lokasi perangkat.
-          </p>
-          <dl className="facts">
-            <div>
-              <dt>Koordinat</dt>
-              <dd>
-                {destination.latitude}, {destination.longitude}
-              </dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>Informasi demonstrasi</dd>
-            </div>
-          </dl>
-          <a
-            className="button"
-            href={navigation}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Buka navigasi
-          </a>
-          <p>
-            <Link href="/destinasi">Kembali ke pencarian</Link>
-          </p>
-        </div>
-      </section>
-    </Shell>
-  );
+      </Shell>
+    );
+  }
+  if (response.status === 404) notFound();
+  if (!response.ok)
+    return (
+      <Shell>
+        <EmptyState
+          headingLevel="h1"
+          title="Destinasi belum dapat dimuat"
+          description="Coba lagi nanti atau temukan destinasi lain."
+          href="/destinasi"
+        />
+      </Shell>
+    );
+  const { data } = await response.json();
+  return <DestinationDetail destination={data} />;
 }

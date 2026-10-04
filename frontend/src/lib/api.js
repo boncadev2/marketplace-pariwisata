@@ -3,6 +3,7 @@ export async function apiRequest(path, options = {}) {
   if (options.method && options.method !== "GET") {
     const csrf = await fetch("/sanctum/csrf-cookie", {
       credentials: "include",
+      signal: options.signal,
     });
     if (!csrf.ok) throw new Error("Tidak dapat menyiapkan sesi.");
     const cookie = document.cookie
@@ -19,7 +20,7 @@ export async function apiRequest(path, options = {}) {
   const result = response.status === 204 ? null : await response.json();
   if (!response.ok) {
     const error = new Error(
-      result?.message || "Permintaan tidak dapat diproses."
+      result?.error?.message || result?.message || "Permintaan tidak dapat diproses."
     );
     error.status = response.status;
     throw error;

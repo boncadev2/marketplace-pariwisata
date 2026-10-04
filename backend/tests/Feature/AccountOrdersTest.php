@@ -40,7 +40,7 @@ class AccountOrdersTest extends TestCase
             ->withHeader('X-Guest-Access-Token', self::GUEST_TOKEN)->postJson($uri, $payload)->assertNotFound();
 
         $user = $unverified;
-        $user->forceFill(['email_verified_at' => now()])->save();
+        $user->forceFill(['email' => 'CUSTOMER@example.test', 'email_verified_at' => now()])->save();
         $this->actingAs($user)->withHeader('X-Guest-Access-Token', str_repeat('x', 48))->postJson($uri, $payload)->assertNotFound();
         $this->actingAs($user)->withHeader('X-Guest-Access-Token', self::GUEST_TOKEN)->postJson($uri, $payload)->assertOk()->assertJsonPath('data.order_id', $order->public_id);
         $this->assertSame($user->id, $order->fresh()->user_id);
@@ -50,7 +50,7 @@ class AccountOrdersTest extends TestCase
     public function test_claim_cannot_transfer_order_to_another_account(): void
     {
         $owner = User::factory()->create(['email' => 'customer@example.test']);
-        $other = User::factory()->create(['email' => 'CUSTOMER@example.test']);
+        $other = User::factory()->create(['email' => 'other@example.test']);
         $order = Order::factory()->create(['user_id' => $owner->id, 'customer_email' => $owner->email, 'guest_access_hash' => Hash::make(self::GUEST_TOKEN)]);
 
         $this->actingAs($other)->withHeader('X-Guest-Access-Token', self::GUEST_TOKEN)

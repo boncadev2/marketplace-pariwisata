@@ -29,4 +29,9 @@ class TourPackage extends Model
     {
         return $this->hasMany(PackageItineraryItem::class)->orderBy('day_number')->orderBy('sequence');
     }
+
+    public function crossVillagePackages(): HasMany
+    {
+        return $this->hasMany(CrossVillagePackage::class);
+    }
 }

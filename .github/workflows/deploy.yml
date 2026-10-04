@@ -1,0 +1,102 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, intl, pdo_sqlite, dom, gd, zip
+          coverage: none
+      - name: Install and audit PHP dependencies
+        working-directory: backend
+        run: |
+          composer install --prefer-dist --no-progress --no-interaction
+          composer audit --locked
+      - name: Run backend tests and formatter check
+        working-directory: backend
+        run: |
+          php artisan test
+          vendor/bin/pint --test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install, audit, lint, and build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+          npm run lint
+          npm run build
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Deploy exact commit to staging
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_TARGET }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BACKUP_ROOT: ${{ secrets.BACKUP_ROOT }}
+          SMOKE_URL: ${{ vars.SMOKE_URL }}
+        run: >-
+          ssh "$DEPLOY_TARGET"
+          "cd '$DEPLOY_PATH' && git fetch origin '$GITHUB_SHA' && git checkout --detach '$GITHUB_SHA'
+          && DEPLOY_ENVIRONMENT=staging APP_DEBUG=false BACKUP_DIRECTORY='$BACKUP_ROOT/$GITHUB_RUN_ID'
+          APP_SMOKE_URL='$SMOKE_URL' ./infra/scripts/deploy-compose.sh"
+
+  deploy-production:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Deploy exact commit to production
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_TARGET }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BACKUP_ROOT: ${{ secrets.BACKUP_ROOT }}
+          SMOKE_URL: ${{ vars.SMOKE_URL }}
+        run: >-
+          ssh "$DEPLOY_TARGET"
+          "cd '$DEPLOY_PATH' && git fetch origin '$GITHUB_SHA' && git checkout --detach '$GITHUB_SHA'
+          && DEPLOY_ENVIRONMENT=production APP_DEBUG=false BACKUP_DIRECTORY='$BACKUP_ROOT/$GITHUB_RUN_ID'
+          APP_SMOKE_URL='$SMOKE_URL' ./infra/scripts/deploy-compose.sh"

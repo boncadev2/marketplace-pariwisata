@@ -16,7 +16,11 @@ class PaymentAttempt extends Model
 
     protected function casts(): array
     {
-        return ['provider_payload' => 'array'];
+        return [
+            'provider_payload' => 'array',
+            'last_reconciled_at' => 'immutable_datetime',
+            'next_reconciliation_at' => 'immutable_datetime',
+        ];
     }
 
     public function order(): BelongsTo

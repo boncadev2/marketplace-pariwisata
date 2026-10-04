@@ -1,0 +1,10 @@
+"use client";
+import {useState} from "react";
+import {Upload} from "lucide-react";
+import {apiRequest} from "../lib/api";
+import {CulinaryPhoto} from "./CulinaryCard";
+export function CulinaryPhotoManager({place,enabled,onSaved,onBusyChange}){
+ const [file,setFile]=useState(null),[illustration,setIllustration]=useState(place.photos_are_illustrations),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
+ async function upload(e){e.preventDefault();if(!file||busy)return;if(file.size>5*1024*1024){setMessage("Ukuran foto maksimal 5 MB.");return;}setBusy(true);onBusyChange(true);setMessage("");try{const body=new FormData();body.set("photo",file);body.set("revision",place.revision);body.set("photos_are_illustrations",illustration?"1":"0");const r=await apiRequest(`/dashboard/culinary-places/${place.id}/photo`,{method:"POST",body});onSaved(r.data);}catch(e){setMessage(e.message+(!e.status||e.status>=500?" Pilih kembali rumah makan untuk memeriksa apakah foto sudah tersimpan.":""));}finally{setBusy(false);onBusyChange(false);}}
+ return <section className="culinary-photo-manager"><span className="heading-kicker"><Upload size={16}/>Foto rumah makan</span><h3>Gunakan foto tempat Anda</h3><CulinaryPhoto key={place.uploaded_photo_url||place.image_url} place={{...place,image_url:place.uploaded_photo_url||place.image_url}}/><form className="culinary-schedule-form" onSubmit={upload}><fieldset disabled={busy||!enabled}><label>Unggah foto rumah makan<input type="file" required accept="image/jpeg,image/png,image/webp" onChange={e=>{setFile(e.target.files?.[0]||null);setMessage("");}}/></label><p>JPG, PNG, atau WebP. Maksimal 5 MB. Simpan informasi tempat sebelum mengunggah foto.</p><label className="culinary-checkbox"><input type="checkbox" checked={illustration} onChange={e=>setIllustration(e.target.checked)}/>Foto yang diunggah adalah ilustrasi</label><button className="ui-button" disabled={!file}>{busy?"Mengunggah…":place.uploaded_photo_url?"Ganti foto rumah makan":"Unggah foto"}</button></fieldset></form><p role="status" aria-live="polite">{message}</p></section>;
+}

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\InventoryHold;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Voucher;
+use App\Support\CommerceMode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,12 +36,13 @@ class AccountOrderController extends Controller
 
     public function show(Request $request, string $publicId): JsonResponse
     {
-        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with(['items:id,order_id,name,quantity', 'partner:id,name,contact_email,contact_phone'])->firstOrFail();
-        $paymentStatus = PaymentAttempt::query()->where('order_id', $order->id)->orderByDesc('id')->value('status');
+        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with(['items:id,order_id,name,quantity,snapshot', 'partner:id,name,contact_email,contact_phone'])->firstOrFail();
+        $attempt = PaymentAttempt::query()->where('order_id', $order->id)->orderByDesc('id')->first();
 
         return response()->json(['data' => [
             ...$this->summary($order),
-            'payment_status' => $paymentStatus,
+            'payment_status' => $attempt?->status,
+            'checkout_url' => $this->resumeUrl($order, $attempt),
             'manager' => ['name' => $order->partner->name, 'email' => $order->partner->contact_email, 'phone' => $order->partner->contact_phone],
             'receipt_available' => false,
         ]])->header('Cache-Control', 'private, no-store');
@@ -86,6 +89,24 @@ class AccountOrderController extends Controller
         }, 3);
 
         return response()->json(['data' => $this->summary($order)])->header('Cache-Control', 'private, no-store');
+    }
+
+    private function resumeUrl(Order $order, ?PaymentAttempt $attempt): ?string
+    {
+        if (! (app()->environment(['local', 'testing', 'staging']) || CommerceMode::enabled()) || $order->status !== 'pending_payment' || $attempt?->status !== 'pending' || ! in_array($attempt->provider, ['midtrans_sandbox', 'midtrans_production'], true) || (int) $attempt->amount !== (int) $order->total || $attempt->currency !== $order->currency) {
+            return null;
+        }
+        $url = $attempt->checkout_url;
+        if (! is_string($url) || ! preg_match($attempt->provider === 'midtrans_production' ? '~^https://app\.midtrans\.com/snap/v4/redirection/[A-Za-z0-9_-]+$~D' : '~^https://app\.sandbox\.midtrans\.com/snap/v4/redirection/[A-Za-z0-9_-]+$~D', $url)) {
+            return null;
+        }
+        $ids = $order->items->map(fn ($item) => $item->snapshot['inventory_hold_id'] ?? null);
+        if ($ids->isEmpty() || $ids->contains(null) || $ids->unique()->count() !== $ids->count()) {
+            return null;
+        }
+        $active = InventoryHold::query()->whereIn('id', $ids)->where('state', 'active')->where('expires_at', '>', now())->count();
+
+        return $active === $ids->count() ? $url : null;
     }
 
     private function summary(Order $order): array

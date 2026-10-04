@@ -2,101 +2,158 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  UserRound,
+  Mail,
+  LockKeyhole,
+  Loader2,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Shell } from "../../components/Shell";
-import { UserPlus, User, Mail, Lock } from "lucide-react";
+import { AuthFrame } from "../../components/AuthFrame";
+import { apiRequest } from "../../lib/api";
 
 export default function Page() {
   const [message, setMessage] = useState("");
-  
-  function submit(event) {
+  const [busy, setBusy] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const [visible, setVisible] = useState(false);
+  async function submit(event) {
     event.preventDefault();
-    setMessage(
-      "Pendaftaran akan diproses melalui API setelah konfigurasi email selesai."
-    );
+    if (busy) return;
+    const data = new FormData(event.currentTarget);
+    if (data.get("password") !== data.get("password_confirmation")) {
+      setMessage("Konfirmasi kata sandi belum cocok.");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      await apiRequest("/register", {
+        method: "POST",
+        body: JSON.stringify(Object.fromEntries(data)),
+      });
+      setComplete(true);
+      setMessage(
+        "Akun berhasil dibuat. Periksa email verifikasi, lalu masuk ke akun Anda."
+      );
+    } catch (error) {
+      setMessage(
+        error.status === 422
+          ? "Periksa data Anda. Email mungkin sudah digunakan atau kata sandi belum memenuhi ketentuan."
+          : "Pendaftaran belum dapat diproses. Coba lagi."
+      );
+    } finally {
+      setBusy(false);
+    }
   }
-  
   return (
     <Shell>
-      <div className="max-w-md mx-auto w-full bg-white rounded-2xl shadow-xl overflow-hidden mt-8 mb-16 border border-gray-100">
-        <div className="bg-emerald-600 p-8 text-center text-white">
-          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-            <UserPlus size={32} />
+      <AuthFrame
+        title="Cerita Anda dimulai di sini."
+        description="Buat akun untuk menyimpan favorit dan mengelola perjalanan."
+      >
+        {complete ? (
+          <div className="auth-success">
+            <p role="status">{message}</p>
+            <Link href="/login" className="ui-button">
+              Masuk ke akun <ArrowRight size={17} />
+            </Link>
           </div>
-          <h1 className="text-2xl font-bold">Buat Akun Baru</h1>
-          <p className="text-emerald-100 mt-2 text-sm">Bergabung dan mulai petualangan Anda</p>
-        </div>
-        
-        <div className="p-8">
-          <form onSubmit={submit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User size={18} className="text-gray-400" />
-                </div>
-                <input
-                  required
-                  name="name"
-                  type="text"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-700 bg-gray-50 focus:bg-white"
-                  placeholder="Nama lengkap Anda"
-                />
-              </div>
+        ) : (
+          <form onSubmit={submit} className="auth-form" aria-busy={busy}>
+            <label htmlFor="register-name">Nama lengkap</label>
+            <div className="auth-input">
+              <UserRound size={18} />
+              <input
+                id="register-name"
+                name="name"
+                autoComplete="name"
+                required
+                maxLength={255}
+                disabled={busy}
+                placeholder="Nama lengkap Anda"
+              />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-gray-400" />
-                </div>
-                <input
-                  required
-                  name="email"
-                  type="email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-700 bg-gray-50 focus:bg-white"
-                  placeholder="nama@email.com"
-                />
-              </div>
+            <label htmlFor="register-email">Alamat email</label>
+            <div className="auth-input">
+              <Mail size={18} />
+              <input
+                id="register-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={busy}
+                placeholder="nama@email.com"
+              />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kata Sandi</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size={18} className="text-gray-400" />
-                </div>
-                <input
-                  required
-                  name="password"
-                  type="password"
-                  minLength="12"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-gray-700 bg-gray-50 focus:bg-white"
-                  placeholder="Minimal 12 karakter"
-                />
-              </div>
+            <label htmlFor="register-password">Kata sandi</label>
+            <div className="auth-input">
+              <LockKeyhole size={18} />
+              <input
+                id="register-password"
+                name="password"
+                type={visible ? "text" : "password"}
+                autoComplete="new-password"
+                minLength={12}
+                required
+                disabled={busy}
+                placeholder="Minimal 12 karakter"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={
+                  visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"
+                }
+                aria-pressed={visible}
+                onClick={() => setVisible(!visible)}
+              >
+                {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-            
+            <label htmlFor="register-confirm">Konfirmasi kata sandi</label>
+            <div className="auth-input">
+              <LockKeyhole size={18} />
+              <input
+                id="register-confirm"
+                name="password_confirmation"
+                type={visible ? "text" : "password"}
+                autoComplete="new-password"
+                minLength={12}
+                required
+                disabled={busy}
+                placeholder="Ulangi kata sandi"
+              />
+            </div>
             {message && (
-              <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg text-sm border border-emerald-100 flex items-center">
+              <p role="status" className="auth-message">
                 {message}
-              </div>
+              </p>
             )}
-            
-            <button 
-              className="w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-md transition-all flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg mt-2"
-            >
-              Daftar Sekarang
+            <button disabled={busy} className="ui-button auth-submit">
+              {busy ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} /> Memproses…
+                </>
+              ) : (
+                <>
+                  Buat akun <ArrowRight size={17} />
+                </>
+              )}
             </button>
           </form>
-          
-          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-            <p className="text-gray-600 text-sm">
-              Sudah punya akun? <Link href="/login" className="text-emerald-600 font-bold hover:underline">Masuk di sini</Link>
-            </p>
-          </div>
+        )}
+        <div className="auth-bottom">
+          Ingin membuka usaha? <Link href="/daftar-mitra">Daftar sebagai mitra</Link>
         </div>
-      </div>
+        <div className="auth-bottom">
+          Sudah punya akun? <Link href="/login">Masuk di sini</Link>
+        </div>
+      </AuthFrame>
     </Shell>
   );
 }
