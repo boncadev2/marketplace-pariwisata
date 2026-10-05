@@ -61,6 +61,7 @@ export function CheckoutForm({
     loading: true,
     reason: "Memeriksa status checkout…",
   });
+  const [promos, setPromos] = useState([]);
   const online = useSyncExternalStore(
     subscribeToConnectivity,
     getConnectivitySnapshot,
@@ -114,6 +115,24 @@ export function CheckoutForm({
           reason: "Status checkout tidak dapat diverifikasi.",
         })
       );
+
+    apiRequest("/lookup/promos")
+      .then((res) => {
+        if (Array.isArray(res?.data)) setPromos(res.data);
+      })
+      .catch(() => {});
+
+    apiRequest("/me")
+      .then((res) => {
+        if (res?.data) {
+          setForm((current) => ({
+            ...current,
+            customer_name: current.customer_name || res.data.name || "",
+            customer_email: current.customer_email || res.data.email || "",
+          }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   function updateField(event) {
@@ -231,10 +250,13 @@ export function CheckoutForm({
       });
       setResult(payload.data);
       setMessage(
-        "Pesanan berhasil dibuat. Simpan ID pesanan dan kode akses berikut."
+        "Pesanan berhasil dibuat. Membuka pembayaran…"
       );
       idempotencyKey.current = null;
       setPendingCheckout(null);
+      if (payload.data?.checkout_url) {
+        window.location.href = payload.data.checkout_url;
+      }
     } catch (error) {
       if (error.status && error.status < 500) {
         idempotencyKey.current = null;
@@ -403,6 +425,26 @@ export function CheckoutForm({
               placeholder="Contoh kupon demo: DEMO10"
               className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 font-normal"
             />
+            {promos.length > 0 && (
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-gray-500">
+                  Kupon tersedia:
+                </span>
+                {promos.map((p) => (
+                  <button
+                    key={p.code}
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, coupon_code: p.code }));
+                      setQuote(null);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-blue-400 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-900 hover:bg-blue-100 transition"
+                  >
+                    🏷️ {p.code} ({p.discount_type === "percentage" ? `Diskon ${p.discount_value}%` : `Diskon ${formatMoney(p.discount_value)}`})
+                  </button>
+                ))}
+              </div>
+            )}
             <span className="mt-2 block text-sm font-normal text-gray-600">
               Kupon memerlukan login dan email akun terverifikasi. Email pemesan
               harus sama dengan akun. Promo belum tersedia untuk transaksi
@@ -433,12 +475,12 @@ export function CheckoutForm({
           >
             {busy === "checkout" ? (
               <span className="flex items-center justify-center gap-2">
-                <Loader2 className="animate-spin" size={18} /> Memproses…
+                <Loader2 className="animate-spin" size={18} /> Memproses pembayaran…
               </span>
             ) : checkoutStatus.loading ? (
               "Memeriksa status…"
             ) : (
-              "Buat pesanan"
+              "Lanjut ke Pembayaran"
             )}
           </button>
         </div>

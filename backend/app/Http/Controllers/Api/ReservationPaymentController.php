@@ -14,6 +14,8 @@ class ReservationPaymentController extends Controller
         $subject = $service->owned($kind, $booking, $request->user());
         if ($action === 'checkout') {
             $payment = $service->checkout($kind, $subject, $request->user());
+        } elseif ($action === 'change-method') {
+            $payment = $service->changeMethod($kind, $subject, $request->user());
         } else {
             $payment = $subject->reservationPayment()->where('user_id', $request->user()->id)->firstOrFail();
             $payment = $action === 'cancel' ? $service->cancel($payment) : $service->refresh($payment);

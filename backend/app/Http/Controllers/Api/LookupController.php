@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Region;
 use App\Services\PublicCatalogCache;
 use Illuminate\Http\JsonResponse;
@@ -37,6 +38,23 @@ class LookupController extends Controller
         });
 
         return $this->publicResponse($request, ['data' => $categories]);
+    }
+
+    public function promos(Request $request): JsonResponse
+    {
+        if (! app()->environment(['local', 'testing'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $coupons = Coupon::query()
+            ->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where(fn ($q) => $q->whereNull('global_quota')->orWhereRaw('used_quota < global_quota'))
+            ->orderBy('id')
+            ->get(['code', 'name', 'description', 'discount_type', 'discount_value', 'minimum_spend', 'maximum_discount']);
+
+        return response()->json(['data' => $coupons]);
     }
 
     private function publicResponse(Request $request, array $payload): JsonResponse

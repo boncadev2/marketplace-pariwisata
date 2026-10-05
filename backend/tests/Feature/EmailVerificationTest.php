@@ -38,4 +38,13 @@ class EmailVerificationTest extends TestCase
         $this->actingAs($user)->get($link.'&altered=1')->assertForbidden();
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
+
+    public function test_guest_can_verify_email_with_valid_signed_link(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $link = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]);
+
+        $response = $this->get($link);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+    }
 }

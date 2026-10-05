@@ -15,6 +15,7 @@ import {
   Search,
   TicketCheck,
   WalletCards,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Shell } from "../../components/Shell";
 import { PilotCheckoutControl } from "../../components/PilotCheckoutControl";
@@ -221,14 +222,23 @@ export default function DashboardPage() {
             Akses dashboard belum tersedia
           </h1>
           <p className="mt-3 text-amber-800">
-            Akun Anda bukan administrator atau anggota mitra aktif.
+            Akun Anda belum terdaftar sebagai anggota mitra aktif. Silakan ajukan
+            pendaftaran usaha Anda atau tunggu persetujuan dari administrator jika sudah mengajukan.
           </p>
-          <Link
-            href="/akun"
-            className="mt-6 inline-flex rounded-xl bg-amber-700 px-5 py-3 font-bold text-white hover:bg-amber-800"
-          >
-            Kembali ke akun
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/daftar-mitra"
+              className="inline-flex rounded-xl bg-amber-700 px-5 py-3 font-bold text-white hover:bg-amber-800"
+            >
+              Daftar jadi mitra / Cek status
+            </Link>
+            <Link
+              href="/akun"
+              className="inline-flex rounded-xl border border-amber-300 bg-white px-5 py-3 font-bold text-amber-900 hover:bg-amber-100"
+            >
+              Kembali ke akun
+            </Link>
+          </div>
         </div>
       </Shell>
     );
@@ -294,7 +304,7 @@ export default function DashboardPage() {
           </Link>
         )}
         {summary?.scope?.role === "super_admin" && (
-          <>
+          <div className="flex flex-wrap items-center gap-3">
             <PilotCheckoutControl />
             <Link
               href="/dashboard/lintas-desa"
@@ -302,7 +312,13 @@ export default function DashboardPage() {
             >
               Kelola simulasi paket lintas desa
             </Link>
-          </>
+            <Link
+              href="/dashboard/pengaturan"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 font-bold text-white shadow-sm hover:bg-slate-800"
+            >
+              <SlidersHorizontal size={18} /> Pengaturan web
+            </Link>
+          </div>
         )}
 
         <form

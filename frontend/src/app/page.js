@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Shell } from "../components/Shell";
 import { HomeDestinations } from "../components/HomeDestinations";
+import { HomeHero } from "../components/HomeHero";
 
 const categories = [
   { href: "/destinasi", label: "Destinasi", icon: Compass },
@@ -28,35 +29,7 @@ const categories = [
 export default function HomePage() {
   return (
     <Shell home>
-      <section className="home-hero site-container">
-        <div className="home-hero-shade" />
-        <div className="home-hero-copy">
-          <span className="hero-kicker">
-            <span /> SAATNYA JELAJAHI DAERAH
-          </span>
-          <h1>
-            Liburan dekat.
-            <br />
-            Cerita <span>hebat.</span>
-          </h1>
-          <p>
-            Temukan tempat baru, nikmati pengalaman lokal,
-            <br className="hidden md:block" /> dan buat perjalanan Anda lebih
-            berarti.
-          </p>
-          <Link href="/destinasi" className="hero-link">
-            Mulai petualangan <ArrowUpRight size={19} />
-          </Link>
-        </div>
-        <div className="hero-note">
-          <MapPin size={17} />
-          <div>
-            <strong>Keindahan ada di sekitar kita</strong>
-            <span>Indonesia, penuh cerita.</span>
-          </div>
-        </div>
-        <span className="hero-image-label">Foto ilustrasi wisata</span>
-      </section>
+      <HomeHero />
       <section className="home-search" aria-label="Rencanakan perjalanan">
         <nav className="search-categories" aria-label="Pilihan pengalaman">
           {categories.map(({ href, label, icon: Icon }, index) => (
@@ -84,7 +57,7 @@ export default function HomePage() {
               />
             </label>
           </div>
-          <button type="submit" className="ui-button ui-button-orange">
+          <button type="submit" className="ui-button ui-button-blue">
             Cari wisata <ArrowRight size={18} />
           </button>
         </form>

@@ -12,6 +12,14 @@
         reverse_proxy backend:8000
     }
 
+    handle /sanctum/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /email/* {
+        reverse_proxy backend:8000
+    }
+
     handle /up {
         reverse_proxy backend:8000
     }

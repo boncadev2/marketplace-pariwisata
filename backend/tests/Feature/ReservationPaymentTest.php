@@ -266,4 +266,32 @@ class ReservationPaymentTest extends TestCase
         $this->assertDatabaseCount('reservation_payments', 0);
         Http::assertNothingSent();
     }
+
+    public function test_change_method_cancels_old_session_and_creates_fresh_snap_session_without_cancelling_booking(): void
+    {
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        $count = 0;
+        Http::fake(function ($request) use (&$count) {
+            if (str_contains($request->url(), '/cancel')) {
+                return Http::response(['status_code' => '200', 'transaction_status' => 'cancel', 'canceled_at' => now()->toISOString()]);
+            }
+            $count++;
+            $token = $count === 1 ? 'sandbox-token-123456789' : 'new-sandbox-token-987654321';
+
+            return Http::response(['token' => $token, 'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/'.$token]);
+        });
+        $base = '/api/v1/account/reservation-payments/umkm/'.$order->public_id;
+        $first = $this->postJson($base.'/checkout')->assertOk();
+        $firstRef = $first->json('data.reference');
+
+        $second = $this->postJson($base.'/change-method')->assertOk();
+        $secondRef = $second->json('data.reference');
+
+        $this->assertNotSame($firstRef, $secondRef);
+        $this->assertSame('pending', $second->json('data.status'));
+        $this->assertSame('https://app.sandbox.midtrans.com/snap/v4/redirection/new-sandbox-token-987654321', $second->json('data.checkout_url'));
+        $this->assertSame('reserved_sandbox', $order->fresh()->status);
+        $this->assertSame(8, $order->product->fresh()->stock);
+    }
 }

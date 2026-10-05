@@ -1,18 +1,37 @@
 <?php
 
 use App\Mail\TransactionNotice;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\User;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
+Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, string $hash) {
+    if ($request->user() && (string) $request->user()->getKey() !== (string) $id) {
+        abort(403);
+    }
+
+    $user = User::findOrFail($id);
+
+    if (! hash_equals(sha1($user->getEmailForVerification()), (string) $hash)) {
+        abort(403);
+    }
+
+    if (! $user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+    }
+
+    Auth::guard('web')->login($user);
+    $request->session()->regenerate();
 
     return redirect(config('services.frontend_url').'/akun');
-})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
+})->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
 Route::get('/login', fn () => redirect(config('services.frontend_url').'/login'))->name('login');
 

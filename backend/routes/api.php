@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AccountDataDeletionController;
 use App\Http\Controllers\Api\AccountOrderController;
 use App\Http\Controllers\Api\AccountSupportTicketController;
 use App\Http\Controllers\Api\AccountWishlistController;
+use App\Http\Controllers\Api\AppSettingController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryRegionController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\CouponQuoteController;
 use App\Http\Controllers\Api\CrossVillageAgreementController;
@@ -70,7 +72,7 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/webhooks/payments/sandbox', [PaymentWebhookController::class, 'store'])->middleware('throttle:webhooks');
     Route::get('/promos/quote', CouponQuoteController::class)->middleware(['auth:sanctum', 'throttle:20,1']);
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:checkout');
-    Route::post('/account/reservation-payments/{kind}/{booking}/{action}', ReservationPaymentController::class)->whereIn('kind', ['umkm', 'lodging', 'culinary'])->whereIn('action', ['checkout', 'refresh', 'cancel'])->middleware(['auth:sanctum', 'throttle:20,1']);
+    Route::post('/account/reservation-payments/{kind}/{booking}/{action}', ReservationPaymentController::class)->whereIn('kind', ['umkm', 'lodging', 'culinary'])->whereIn('action', ['checkout', 'refresh', 'cancel', 'change-method'])->middleware(['auth:sanctum', 'throttle:20,1']);
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
@@ -127,6 +129,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/account/lodging-bookings/{booking}/cancel', [LodgingBookingController::class, 'cancel'])->middleware(['auth:sanctum', 'throttle:10,1']);
     Route::get('/lookup/regions', [LookupController::class, 'regions']);
     Route::get('/lookup/categories', [LookupController::class, 'categories']);
+    Route::get('/lookup/promos', [LookupController::class, 'promos'])->middleware('throttle:30,1');
+    Route::get('/promos', [LookupController::class, 'promos'])->middleware('throttle:30,1');
+    Route::get('/lookup/settings', [AppSettingController::class, 'publicIndex']);
+    Route::get('/settings', [AppSettingController::class, 'publicIndex']);
     Route::get('/dashboard/packages/{product}/calendar', [PackageCalendarController::class, 'index'])->whereNumber('product')->middleware(['auth:sanctum', 'service.management', 'throttle:60,1']);
     Route::patch('/dashboard/packages/{product}/calendar', [PackageCalendarController::class, 'update'])->whereNumber('product')->middleware(['auth:sanctum', 'service.management', 'throttle:20,1']);
     Route::get('/tour-packages/{product:slug}', TourPackageDetailController::class);
@@ -223,6 +229,25 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/transactions/{order}', [OperationalDashboardController::class, 'transaction']);
         Route::get('/exceptions', [OperationalDashboardController::class, 'exceptions']);
         Route::get('/export', [OperationalDashboardController::class, 'export'])->middleware('throttle:10,1');
+    });
+
+    Route::prefix('dashboard/settings')->middleware(['auth:sanctum', 'admin.platform'])->group(function (): void {
+        Route::get('/', [AppSettingController::class, 'adminIndex']);
+        Route::put('/', [AppSettingController::class, 'update'])->middleware('throttle:20,1');
+        Route::post('/upload', [AppSettingController::class, 'upload'])->middleware('throttle:uploads');
+        Route::post('/reset', [AppSettingController::class, 'reset'])->middleware('throttle:10,1');
+    });
+
+    Route::prefix('dashboard/master-data')->middleware(['auth:sanctum', 'admin.platform'])->group(function (): void {
+        Route::get('/categories', [CategoryRegionController::class, 'categoriesIndex']);
+        Route::post('/categories', [CategoryRegionController::class, 'categoryStore'])->middleware('throttle:30,1');
+        Route::put('/categories/{category}', [CategoryRegionController::class, 'categoryUpdate'])->whereNumber('category')->middleware('throttle:30,1');
+        Route::delete('/categories/{category}', [CategoryRegionController::class, 'categoryDestroy'])->whereNumber('category')->middleware('throttle:30,1');
+
+        Route::get('/regions', [CategoryRegionController::class, 'regionsIndex']);
+        Route::post('/regions', [CategoryRegionController::class, 'regionStore'])->middleware('throttle:30,1');
+        Route::put('/regions/{region}', [CategoryRegionController::class, 'regionUpdate'])->whereNumber('region')->middleware('throttle:30,1');
+        Route::delete('/regions/{region}', [CategoryRegionController::class, 'regionDestroy'])->whereNumber('region')->middleware('throttle:30,1');
     });
 
     // Phase 28: Rekonsiliasi otomatis dan recovery transaksi

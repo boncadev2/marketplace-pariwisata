@@ -22,4 +22,28 @@ class LookupTest extends TestCase
         $this->getJson('/api/v1/lookup/regions?parent_id='.$parent->id)->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/lookup/categories')->assertOk()->assertJsonCount(1, 'data');
     }
+
+    public function test_lookup_returns_active_promos(): void
+    {
+        \App\Models\Coupon::create([
+            'code' => 'TEST10',
+            'name' => 'Diskon 10%',
+            'description' => 'Test',
+            'discount_type' => 'percentage',
+            'discount_value' => '10.00',
+            'minimum_spend' => '10000.00',
+            'is_active' => true,
+        ]);
+        \App\Models\Coupon::create([
+            'code' => 'INACTIVE',
+            'name' => 'Nonaktif',
+            'description' => 'Test',
+            'discount_type' => 'percentage',
+            'discount_value' => '10.00',
+            'minimum_spend' => '10000.00',
+            'is_active' => false,
+        ]);
+
+        $this->getJson('/api/v1/lookup/promos')->assertOk()->assertJsonCount(1, 'data');
+    }
 }

@@ -24,6 +24,7 @@ const nextConfig = {
     return [
       { source: "/api/:path*", destination: `${backend}/api/:path*` },
       { source: "/sanctum/:path*", destination: `${backend}/sanctum/:path*` },
+      { source: "/email/:path*", destination: `${backend}/email/:path*` },
     ];
   },
 };

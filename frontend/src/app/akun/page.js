@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "../../components/PageHeader";
 import { Shell } from "../../components/Shell";
+import { syncProfile } from "../../components/SiteNavigation";
 import { apiRequest } from "../../lib/api";
 
 const statuses = {
@@ -38,12 +39,16 @@ export default function Page() {
       try {
         const account = await apiRequest("/me");
         setProfile(account.data);
+        syncProfile(account.data);
         await reload();
         const saved = await apiRequest("/account/wishlist");
         setWishlist(saved.data);
       } catch (error) {
-        if (error.status !== 401)
+        if (error.status === 401) {
+          syncProfile(null);
+        } else {
           setMessage("Pesanan tidak dapat dimuat. Coba lagi.");
+        }
       } finally {
         setLoading(false);
       }
@@ -134,6 +139,7 @@ export default function Page() {
         body: JSON.stringify({ name: form.get("name") }),
       });
       setProfile(result.data);
+      syncProfile(result.data);
       setMessage("Nama profil berhasil diperbarui.");
     } catch {
       setMessage(

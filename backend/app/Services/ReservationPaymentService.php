@@ -77,6 +77,60 @@ class ReservationPaymentService
         });
     }
 
+    public function changeMethod(string $kind, Model $subject, User $user): ReservationPayment
+    {
+        $this->gateway->assertConfigured();
+
+        return Cache::lock('reservation-pay:'.$kind.':'.$subject->id, 60)->block(5, function () use ($kind, $subject, $user): ReservationPayment {
+            $payment = DB::transaction(function () use ($kind, $subject, $user): ReservationPayment {
+                $booking = $this->lockSubject($kind, $subject->id);
+                abort_unless($booking->user_id === $user->id, 404);
+                $existing = $booking->reservationPayment()->lockForUpdate()->first();
+                abort_unless($existing !== null, 404, 'Pembayaran belum dibuat.');
+                abort_if(in_array($existing->status, ['paid', 'refunded', 'payment_exception'], true), 409, 'Pembayaran sudah selesai atau sedang ditangani admin.');
+
+                if ($existing->snap_token || $existing->reference) {
+                    try {
+                        $this->gateway->cancelReservationCheckout($existing);
+                    } catch (Throwable) {
+                        // Ignore if already canceled or expired in Midtrans
+                    }
+                }
+
+                $existing->update([
+                    'reference' => Str::uuid()->toString(),
+                    'status' => 'created',
+                    'checkout_url' => null,
+                    'snap_token' => null,
+                    'provider_status' => null,
+                    'expires_at' => now()->addMinutes(15),
+                    'last_checked_at' => null,
+                ]);
+
+                return $existing->fresh();
+            }, 3);
+
+            try {
+                $result = $this->gateway->createReservationCheckout($payment, $user);
+
+                return DB::transaction(function () use ($payment, $result): ReservationPayment {
+                    $locked = ReservationPayment::query()->lockForUpdate()->findOrFail($payment->id);
+                    $changes = ['checkout_url' => $result['checkout_url'], 'snap_token' => $result['snap_token']];
+                    if ($locked->status === 'created') {
+                        $changes['status'] = 'pending';
+                    }
+                    $locked->update($changes);
+
+                    return $locked;
+                }, 3);
+            } catch (Throwable) {
+                ReservationPayment::query()->whereKey($payment->id)->where('status', 'created')->update(['status' => 'uncertain']);
+
+                return $payment->fresh();
+            }
+        });
+    }
+
     public function refresh(ReservationPayment $payment): ReservationPayment
     {
         abort_unless($payment->provider === $this->gateway->provider(), 409, 'Pembayaran berasal dari lingkungan Midtrans berbeda.');

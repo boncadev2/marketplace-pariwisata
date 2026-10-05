@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Shell } from "../../components/Shell";
 import { AuthFrame } from "../../components/AuthFrame";
+import { fetchProfile, syncProfile } from "../../components/SiteNavigation";
 import { apiRequest } from "../../lib/api";
 
 export default function Page() {
@@ -36,14 +37,19 @@ export default function Page() {
             : { email: form.get("email"), password: form.get("password") }
         ),
       });
-      if (forgot)
+      if (forgot) {
         setMessage(
           "Jika akun tersedia, instruksi pemulihan akan dikirim ke email Anda."
         );
-      else
+      } else {
+        if (result?.data) {
+          syncProfile(result.data);
+        }
+        await fetchProfile(true);
         router.push(
-          result.redirect_to === "/dashboard" ? "/dashboard" : "/akun"
+          result?.redirect_to === "/dashboard" ? "/dashboard" : "/akun"
         );
+      }
     } catch (error) {
       setMessage(
         error.status === 422

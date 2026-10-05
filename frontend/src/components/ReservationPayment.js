@@ -58,7 +58,7 @@ export function ReservationPayment({
       setCurrent(result.data);
       setConfirm(false);
       if (
-        name === "checkout" &&
+        (name === "checkout" || name === "change-method") &&
         result.data.status === "pending" &&
         result.data.checkout_url
       ) {
@@ -125,6 +125,15 @@ export function ReservationPayment({
             <a className="ui-button" href={state.checkout_url}>
               Lanjutkan pembayaran
             </a>
+          )}
+          {state.status === "pending" && (
+            <button
+              className="ui-button ui-button-outline"
+              disabled={busy || disabled}
+              onClick={() => action("change-method")}
+            >
+              {busy ? "Menyiapkan…" : "Ganti cara bayar"}
+            </button>
           )}
           <button
             className="ui-button ui-button-outline"
