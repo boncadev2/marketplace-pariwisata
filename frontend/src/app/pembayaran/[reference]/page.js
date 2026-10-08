@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ShieldCheck, Clock3, ArrowRight, Ticket, Info } from "lucide-react";
 import { Shell } from "../../../components/Shell";
 import { PageHeader } from "../../../components/PageHeader";
+import { PaymentWhatsAppNotification } from "../../../components/PaymentWhatsAppNotification";
 
 export default async function PaymentInstructionPage({ params }) {
   const { reference } = await params;
@@ -38,6 +39,7 @@ export default async function PaymentInstructionPage({ params }) {
           <Link href="/akun" className="ui-button">
             Lihat pesanan saya <ArrowRight size={17} />
           </Link>
+          <PaymentWhatsAppNotification reference={reference} />
         </section>
         <aside className="detail-plan">
           <span className="detail-plan-icon">
@@ -45,9 +47,8 @@ export default async function PaymentInstructionPage({ params }) {
           </span>
           <h2>Selanjutnya, voucher perjalanan.</h2>
           <p>
-            Voucher tersedia setelah pesanan dibayar dan diverifikasi. Untuk
-            pesanan tamu, gunakan nomor pesanan dan kode akses yang diberikan
-            saat checkout.
+            Voucher tersedia setelah pesanan dibayar dan diverifikasi. Anda
+            dapat membuka e-voucher langsung dari akun Anda.
           </p>
           <Link href="/voucher" className="ui-button ui-button-outline">
             Buka voucher <ArrowRight size={16} />

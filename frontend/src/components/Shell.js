@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { Brand, RouteNavigation, SiteNavigation } from "./SiteNavigation";
 import { useSettings } from "../lib/settings";
+import { OfflineNotice } from "./OfflineNotice";
+import { PwaInstallBanner } from "./PwaInstallBanner";
+import { MobileBottomNav } from "./MobileBottomNav";
 
 function SocialIcon({ type }) {
   if (type === "instagram") {
@@ -64,6 +67,7 @@ export function Shell({ children, home = false }) {
 
   return (
     <div className="travel-app">
+      <OfflineNotice />
       <a href="#main-content" className="skip-link">
         Lewati ke konten utama
       </a>
@@ -194,6 +198,7 @@ export function Shell({ children, home = false }) {
               ["/paket", "Paket wisata"],
               ["/kuliner", "Kuliner lokal"],
               ["/umkm", "Produk UMKM"],
+              ["/artikel", "Artikel & Cerita Wisata"],
             ].map(([href, label]) => (
               <Link key={href} href={href}>
                 {label}
@@ -204,11 +209,10 @@ export function Shell({ children, home = false }) {
             <h3>Perjalanan Anda</h3>
             {[
               ["/akun", "Akun & pesanan"],
-              ["/daftar-mitra", "Daftar mitra"],
-              ["/akun/umkm", "Pesanan UMKM"],
-              ["/akun/reservasi", "Reservasi penginapan & kuliner"],
               ["/voucher", "Voucher perjalanan"],
-              ["/bantuan", "Pusat bantuan"],
+              ["/bantuan", "Pusat bantuan & FAQ"],
+              ["/syarat-ketentuan", "Syarat & ketentuan"],
+              ["/kebijakan-privasi", "Kebijakan privasi"],
             ].map(([href, label]) => (
               <Link key={href} href={href}>
                 {label}
@@ -217,6 +221,8 @@ export function Shell({ children, home = false }) {
           </div>
           <div>
             <h3>Bersama mitra</h3>
+            <Link href="/tentang-kami">Tentang kami</Link>
+            <Link href="/daftar-mitra">Pendaftaran mitra</Link>
             <Link href="/dashboard">
               Portal pengelola <ArrowUpRight size={14} />
             </Link>
@@ -228,12 +234,20 @@ export function Shell({ children, home = false }) {
           </div>
         </div>
         <div className="site-container footer-bottom">
-          <span>© {new Date().getFullYear()} {settings.app_name || "WisataDaerah"}</span>
-          <span>
-            Dibuat untuk perjalanan yang lebih berarti. <Compass size={14} />
+          <span>© {new Date().getFullYear()} {settings.app_name || "WisataDaerah"}. Seluruh hak cipta dilindungi.</span>
+          <span style={{ display: "flex", gap: "0.75rem", alignItems: "center", fontSize: "0.85rem" }}>
+            <Link href="/kebijakan-privasi">Kebijakan Privasi</Link>
+            <span>·</span>
+            <Link href="/syarat-ketentuan">Syarat Layanan</Link>
+            <span>·</span>
+            <Link href="/tentang-kami">Tentang Kami</Link>
+            <span>·</span>
+            <Compass size={14} />
           </span>
         </div>
       </footer>
+      <PwaInstallBanner />
+      <MobileBottomNav />
     </div>
   );
 }

@@ -17,6 +17,8 @@ import {
 import { Shell } from "../components/Shell";
 import { HomeDestinations } from "../components/HomeDestinations";
 import { HomeHero } from "../components/HomeHero";
+import { HomePromoBanners } from "../components/HomePromoBanners";
+import { HomeArticles } from "../components/HomeArticles";
 
 const categories = [
   { href: "/destinasi", label: "Destinasi", icon: Compass },
@@ -63,7 +65,7 @@ export default function HomePage() {
         </form>
         <div className="search-suggestions">
           <span>Ide perjalanan:</span>
-          {["Air Terjun", "Kampung", "Pantai"].map((term) => (
+          {["Air Terjun", "Desa Wisata", "Pantai", "Keluarga", "Budaya Lokal", "Homestay"].map((term) => (
             <Link key={term} href={`/destinasi?q=${encodeURIComponent(term)}`}>
               {term}
               <ArrowUpRight size={11} />
@@ -117,6 +119,7 @@ export default function HomePage() {
           </div>
           <HomeDestinations />
         </section>
+        <HomePromoBanners />
         <section className="home-section">
           <div className="section-title">
             <div>
@@ -178,6 +181,7 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+        <HomeArticles />
         <section className="home-account-banner">
           <span className="account-banner-icon">
             <Ticket size={42} strokeWidth={1.4} />

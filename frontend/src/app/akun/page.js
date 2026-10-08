@@ -3,6 +3,21 @@ import { RefundRequestControl } from "../../components/RefundRequestControl";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  Star,
+  X,
+  Loader2,
+  ShieldAlert,
+  AlertTriangle,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  Users,
+  Smartphone,
+  Printer,
+  Send,
+} from "lucide-react";
 import { EmptyState } from "../../components/PageHeader";
 import { Shell } from "../../components/Shell";
 import { syncProfile } from "../../components/SiteNavigation";
@@ -28,6 +43,224 @@ export default function Page() {
   const [wishlist, setWishlist] = useState([]);
   const [activeTab, setActiveTab] = useState("orders");
 
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+
+  const [disputeOrder, setDisputeOrder] = useState(null);
+  const [disputeReason, setDisputeReason] = useState("Layanan Tidak Sesuai Deskripsi");
+  const [disputeDescription, setDisputeDescription] = useState("");
+  const [disputeBusy, setDisputeBusy] = useState(false);
+  const [disputeError, setDisputeError] = useState("");
+  const [viewingDispute, setViewingDispute] = useState(null);
+
+  const [deletionRequest, setDeletionRequest] = useState(null);
+  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [deletionBusy, setDeletionBusy] = useState(false);
+  const [deletionError, setDeletionError] = useState("");
+
+  const [manifestOrder, setManifestOrder] = useState(null);
+  const [manifestParticipants, setManifestParticipants] = useState([]);
+  const [manifestBusy, setManifestBusy] = useState(false);
+  const [manifestError, setManifestError] = useState("");
+
+  const [whatsAppModalOrder, setWhatsAppModalOrder] = useState(null);
+  const [waPhone, setWaPhone] = useState("");
+  const [waBusy, setWaBusy] = useState(false);
+  const [waError, setWaError] = useState("");
+  const [waResult, setWaResult] = useState(null);
+
+  function openWhatsAppModal(order) {
+    setWhatsAppModalOrder(order);
+    setWaPhone(profile?.phone || "");
+    setWaBusy(false);
+    setWaError("");
+    setWaResult(null);
+  }
+
+  async function sendWhatsAppVoucher(event) {
+    event.preventDefault();
+    if (!waPhone.trim() || waBusy || !whatsAppModalOrder) return;
+    setWaBusy(true);
+    setWaError("");
+    setWaResult(null);
+    try {
+      const res = await apiRequest(`/account/orders/${whatsAppModalOrder.order_id}/whatsapp`, {
+        method: "POST",
+        body: JSON.stringify({ phone: waPhone.trim() }),
+      });
+      setWaResult(res.data);
+    } catch (err) {
+      setWaError(err.message || "Gagal mengirim tiket ke WhatsApp.");
+    } finally {
+      setWaBusy(false);
+    }
+  }
+
+  function openManifestModal(order) {
+    setManifestOrder(order);
+    if (order.participants && order.participants.length > 0) {
+      setManifestParticipants(order.participants.map((p) => ({
+        name: p.name || "",
+        id_number: p.id_number || "",
+        phone: p.phone || "",
+        emergency_contact: p.emergency_contact || "",
+        notes: p.notes || "",
+      })));
+    } else {
+      const defaultQty = order.items?.[0]?.quantity || 1;
+      const initialRows = [];
+      for (let i = 0; i < Math.max(1, defaultQty); i++) {
+        initialRows.push({
+          name: i === 0 ? (order.customer_name || profile?.name || "") : "",
+          id_number: "",
+          phone: i === 0 ? (profile?.phone || "") : "",
+          emergency_contact: "",
+          notes: "",
+        });
+      }
+      setManifestParticipants(initialRows);
+    }
+    setManifestError("");
+  }
+
+  function addParticipantRow() {
+    setManifestParticipants((prev) => [
+      ...prev,
+      { name: "", id_number: "", phone: "", emergency_contact: "", notes: "" },
+    ]);
+  }
+
+  function removeParticipantRow(idx) {
+    if (manifestParticipants.length <= 1) return;
+    setManifestParticipants((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function updateParticipantField(idx, field, value) {
+    setManifestParticipants((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+    );
+  }
+
+  async function saveManifest(event) {
+    event.preventDefault();
+    if (manifestBusy || !manifestOrder) return;
+    const hasEmptyName = manifestParticipants.some((p) => !p.name.trim());
+    if (hasEmptyName) {
+      setManifestError("Nama lengkap wajib diisi untuk setiap peserta.");
+      return;
+    }
+    setManifestBusy(true);
+    setManifestError("");
+    try {
+      await apiRequest(`/account/orders/${manifestOrder.order_id}/participants`, {
+        method: "POST",
+        body: JSON.stringify({
+          participants: manifestParticipants.map((p) => ({
+            name: p.name.trim(),
+            id_number: p.id_number?.trim() || null,
+            phone: p.phone?.trim() || null,
+            emergency_contact: p.emergency_contact?.trim() || null,
+            notes: p.notes?.trim() || null,
+          })),
+        }),
+      });
+      setMessage("Manifest peserta rombongan berhasil disimpan.");
+      setManifestOrder(null);
+      await reload(status);
+      if (selectedOrder?.order_id === manifestOrder.order_id) {
+        await showOrder(manifestOrder.order_id);
+      }
+    } catch (err) {
+      setManifestError(err.message || "Gagal menyimpan manifest peserta.");
+    } finally {
+      setManifestBusy(false);
+    }
+  }
+
+  function openReviewModal(order) {
+    setReviewingOrder(order);
+    setReviewRating(5);
+    setReviewHoverRating(0);
+    setReviewComment("");
+    setReviewError("");
+  }
+
+  async function submitReview(event) {
+    event.preventDefault();
+    if (reviewBusy || !reviewingOrder) return;
+    setReviewBusy(true);
+    setReviewError("");
+    try {
+      await apiRequest("/reviews", {
+        method: "POST",
+        body: JSON.stringify({
+          order_id: reviewingOrder.order_id,
+          product_id: reviewingOrder.items?.[0]?.product_id,
+          rating: reviewRating,
+          comment: reviewComment,
+        }),
+      });
+      setReviewingOrder(null);
+      setMessage("Terima kasih! Ulasan Anda berhasil dikirim.");
+      await reload(status);
+    } catch (err) {
+      setReviewError(err.message || "Gagal mengirim ulasan. Silakan coba lagi.");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function submitDispute(event) {
+    event.preventDefault();
+    if (disputeBusy || !disputeOrder) return;
+    setDisputeBusy(true);
+    setDisputeError("");
+    try {
+      await apiRequest("/disputes", {
+        method: "POST",
+        body: JSON.stringify({
+          order_id: disputeOrder.id || disputeOrder.order_id,
+          reason: disputeReason,
+          description: disputeDescription.trim() || null,
+        }),
+      });
+      setDisputeOrder(null);
+      setMessage("Laporan komplain sengketa berhasil diajukan. Tim mediator platform akan meninjau kendala Anda.");
+      await reload(status);
+    } catch (err) {
+      setDisputeError(err.message || "Gagal mengajukan sengketa. Silakan coba lagi.");
+    } finally {
+      setDisputeBusy(false);
+    }
+  }
+
+  async function submitDeletionRequest(event) {
+    event.preventDefault();
+    if (deletionBusy) return;
+    setDeletionBusy(true);
+    setDeletionError("");
+    try {
+      const res = await apiRequest("/account/data-deletion-request", {
+        method: "POST",
+        body: JSON.stringify({
+          reason: deletionReason.trim() || null,
+        }),
+      });
+      setDeletionRequest(res.data);
+      setDeletionModalOpen(false);
+      setMessage("Permintaan penghapusan akun Anda telah dicatat sesuai hak subjek data UU PDP.");
+    } catch (err) {
+      setDeletionError(err.message || "Gagal mengajukan penghapusan akun.");
+    } finally {
+      setDeletionBusy(false);
+    }
+  }
+
   const reload = useCallback(async (filter = "") => {
     const query = filter ? `?status=${encodeURIComponent(filter)}` : "";
     const result = await apiRequest(`/account/orders${query}`);
@@ -43,6 +276,12 @@ export default function Page() {
         await reload();
         const saved = await apiRequest("/account/wishlist");
         setWishlist(saved.data);
+        try {
+          const delRes = await apiRequest("/account/data-deletion-request");
+          setDeletionRequest(delRes.data);
+        } catch {
+          // ignore if deletion endpoint not applicable
+        }
       } catch (error) {
         if (error.status === 401) {
           syncProfile(null);
@@ -68,34 +307,6 @@ export default function Page() {
     }
   }
 
-  async function claim(event) {
-    event.preventDefault();
-    if (busy) return;
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    setBusy(true);
-    setMessage("");
-    try {
-      await apiRequest("/account/orders/claim", {
-        method: "POST",
-        headers: { "X-Guest-Access-Token": values.get("access_token") },
-        body: JSON.stringify({ order_id: values.get("order_id") }),
-      });
-      form.reset();
-      await reload(status);
-      setMessage("Pesanan berhasil ditautkan ke akun Anda.");
-    } catch (error) {
-      setMessage(
-        error.status === 403
-          ? "Verifikasi email akun Anda terlebih dahulu."
-          : error.status === 404
-            ? "Pesanan atau kode akses tidak cocok dengan akun ini."
-            : "Klaim pesanan gagal. Coba lagi."
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function resendVerification() {
     setMessage("");
@@ -177,11 +388,6 @@ export default function Page() {
       label: "Pengaturan Profil",
       icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
     },
-    {
-      id: "claim",
-      label: "Klaim Pesanan",
-      icon: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z",
-    },
   ];
 
   if (selectedOrder && !tabs.find((t) => t.id === "details")) {
@@ -195,51 +401,42 @@ export default function Page() {
   return (
     <Shell>
       <div className="account-page pb-12">
-        <div className="account-heading pb-24 pt-8">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Rencana tersimpan. Perjalanan tertata.
-            </h1>
-            {loading ? (
-              <p className="text-blue-100">Memuat akun…</p>
-            ) : profile ? (
-              <p className="text-blue-100">
-                Halo, {profile.name}. Selamat datang di dasbor Anda.
-              </p>
-            ) : (
-              <p className="text-blue-100">
-                <Link
-                  href="/login"
-                  className="underline font-medium hover:text-white"
-                >
-                  Masuk
-                </Link>{" "}
-                untuk melihat perjalanan Anda.
-              </p>
-            )}
-          </div>
-        </div>
+        {profile && (
+          <>
+            <div className="account-heading pb-24 pt-8">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h1 className="text-3xl font-bold text-white mb-2">
+                  Rencana tersimpan. Perjalanan tertata.
+                </h1>
+                <p className="text-blue-100">
+                  Halo, {profile.name}. Selamat datang di dasbor Anda.
+                </p>
+              </div>
+            </div>
 
-        <div className="package-toolbar">
-          <Link href="/akun/reservasi">Reservasi penginapan & kuliner →</Link>
-          <Link href="/akun/umkm">Pesanan produk UMKM →</Link>
-          <Link href="/daftar-mitra">Pendaftaran & status mitra →</Link>
-        </div>
+            <div className="package-toolbar">
+              <Link href="/akun/reservasi">Reservasi penginapan & kuliner →</Link>
+              <Link href="/akun/umkm">Pesanan produk UMKM →</Link>
+              <Link href="/daftar-mitra">Pendaftaran & status mitra →</Link>
+            </div>
+          </>
+        )}
         {!loading && !profile && (
-          <EmptyState
-            title="Satu akun untuk semua perjalanan"
-            description="Masuk untuk melihat pesanan, menyimpan tempat favorit, dan membuka voucher Anda."
-            href="/login"
-            label="Masuk ke akun"
-          />
+          <div className="pt-8">
+            <EmptyState
+              title="Satu akun untuk semua perjalanan"
+              description="Masuk untuk melihat pesanan, menyimpan tempat favorit, dan membuka voucher Anda."
+              href="/login"
+              label="Masuk ke akun"
+            />
+          </div>
         )}
         {profile && (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
             {!profile.email_verified_at && (
               <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-md shadow-sm flex flex-col sm:flex-row justify-between items-center">
                 <p className="text-amber-800 text-sm mb-3 sm:mb-0">
-                  Email akun belum terverifikasi. Verifikasi dulu sebelum
-                  mengklaim pesanan tamu.
+                  Email akun belum terverifikasi. Silakan periksa kotak masuk email Anda dan klik tautan verifikasi.
                 </p>
                 <button
                   type="button"
@@ -346,6 +543,23 @@ export default function Page() {
                                 <p className="text-sm text-gray-500 mb-1">
                                   ID: {order.order_id}
                                 </p>
+                                {order.disputes && order.disputes.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {order.disputes.map((disp) => (
+                                      <button
+                                        key={disp.id}
+                                        type="button"
+                                        onClick={() => setViewingDispute(disp)}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
+                                      >
+                                        <ShieldAlert size={13} />
+                                        <span>
+                                          Sengketa #{disp.id}: {disp.status === "open" ? "Menunggu Peninjauan" : disp.status === "under_review" ? "Sedang Ditinjau" : disp.status === "resolved" ? "Terselesaikan" : "Ditutup"}
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                                 {["paid", "refunded"].includes(order.status) && <RefundRequestControl kind="order" reference={order.order_id} />}
                                 {order.status === "payment_exception" && (
                                   <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded mt-2">
@@ -361,7 +575,7 @@ export default function Page() {
                                     currency: order.currency,
                                   }).format(order.total)}
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 items-center">
                                   <button
                                     type="button"
                                     onClick={() => showOrder(order.order_id)}
@@ -370,20 +584,76 @@ export default function Page() {
                                     Lihat Rincian
                                   </button>
                                   {order.status === "paid" && (
-                                    <Link
-                                      href={`/voucher?order_id=${encodeURIComponent(order.order_id)}&account=1`}
-                                      className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                                    >
-                                      Voucher
-                                    </Link>
+                                    <>
+                                      <Link
+                                        href={`/voucher?order_id=${encodeURIComponent(order.order_id)}&account=1`}
+                                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                                      >
+                                        Voucher
+                                      </Link>
+                                      <Link
+                                        href={`/voucher?order_id=${encodeURIComponent(order.order_id)}&account=1&print=1`}
+                                        className="px-3 py-1.5 text-sm font-medium text-neutral-700 bg-neutral-100 border border-neutral-300 rounded-md hover:bg-neutral-200 transition-colors inline-flex items-center gap-1"
+                                        title="Cetak atau simpan e-tiket PDF"
+                                      >
+                                        <Printer size={15} /> Cetak
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        onClick={() => openWhatsAppModal(order)}
+                                        className="px-3 py-1.5 text-sm font-medium text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-md hover:bg-emerald-100 transition-colors inline-flex items-center gap-1"
+                                        title="Kirim tiket dan tautan voucher ke nomor WhatsApp"
+                                      >
+                                        <Smartphone size={15} /> Kirim WA
+                                      </button>
+                                      {order.has_review ? (
+                                        <span className="px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-100 rounded-md inline-flex items-center gap-1">
+                                          ✓ Sudah Diulas
+                                        </span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => openReviewModal(order)}
+                                          className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors inline-flex items-center gap-1"
+                                        >
+                                          ⭐ Beri Ulasan
+                                        </button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
-                                <Link
-                                  href={`/bantuan?order_id=${encodeURIComponent(order.order_id)}`}
-                                  className="text-xs text-gray-500 hover:text-emerald-600 mt-1"
-                                >
-                                  Minta bantuan
-                                </Link>
+                                <div className="flex flex-wrap items-center gap-3 mt-1">
+                                  <Link
+                                    href={`/bantuan?order_id=${encodeURIComponent(order.order_id)}`}
+                                    className="text-xs text-gray-500 hover:text-emerald-600"
+                                  >
+                                    Minta bantuan
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() => openManifestModal(order)}
+                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                                  >
+                                    <Users size={12} />
+                                    {order.participants && order.participants.length > 0
+                                      ? `Manifest (${order.participants.length})`
+                                      : "Manifest Peserta"}
+                                  </button>
+                                  {["paid", "cancelled", "payment_exception"].includes(order.status) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDisputeOrder(order);
+                                        setDisputeReason("Layanan Tidak Sesuai Deskripsi");
+                                        setDisputeDescription("");
+                                        setDisputeError("");
+                                      }}
+                                      className="text-xs text-rose-600 hover:text-rose-700 font-medium inline-flex items-center gap-0.5"
+                                    >
+                                      <AlertTriangle size={12} /> Ajukan Sengketa
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </article>
@@ -517,6 +787,58 @@ export default function Page() {
                       </div>
                     </div>
 
+                    {/* Manifest Peserta Rombongan Card */}
+                    <div className="mt-6 border border-slate-200 rounded-xl p-5 bg-slate-50/50">
+                      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                        <div>
+                          <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+                            <Users size={18} className="text-blue-600" />
+                            Manifest Peserta Rombongan
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            Data identitas dan manifest peserta rombongan untuk klaim asuransi & verifikasi tiket masuk.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openManifestModal(selectedOrder)}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                        >
+                          {selectedOrder.participants && selectedOrder.participants.length > 0 ? "Edit Manifest" : "Lengkapi Manifest"}
+                        </button>
+                      </div>
+                      {selectedOrder.participants && selectedOrder.participants.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left bg-white rounded-lg border border-gray-200">
+                            <thead className="bg-gray-100 text-gray-700">
+                              <tr>
+                                <th className="p-2.5 font-semibold">No</th>
+                                <th className="p-2.5 font-semibold">Nama Lengkap</th>
+                                <th className="p-2.5 font-semibold">No. KTP / Paspor</th>
+                                <th className="p-2.5 font-semibold">No. Kontak</th>
+                                <th className="p-2.5 font-semibold">Catatan Khusus</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {selectedOrder.participants.map((p, i) => (
+                                <tr key={i}>
+                                  <td className="p-2.5 font-bold text-gray-500">{i + 1}</td>
+                                  <td className="p-2.5 font-semibold text-gray-900">{p.name}</td>
+                                  <td className="p-2.5 font-mono text-gray-600">{p.id_number || "-"}</td>
+                                  <td className="p-2.5 text-gray-600">{p.phone || "-"}</td>
+                                  <td className="p-2.5 text-gray-500">{p.notes || "-"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-white rounded-lg border border-dashed border-gray-300 text-center text-xs text-gray-500">
+                          Manifest peserta rombongan belum diisi. Lengkapi nama peserta untuk mempermudah pemeriksaan di pos masuk.
+                        </div>
+                      )}
+                    </div>
+
                     {!selectedOrder.receipt_available && (
                       <div className="mt-6 bg-blue-50 text-blue-800 p-4 rounded-lg text-sm">
                         Invoice atau bukti transaksi resmi belum tersedia untuk
@@ -630,79 +952,923 @@ export default function Page() {
                           {busy ? "Menyimpan…" : "Simpan Nama"}
                         </button>
                       </form>
-                    </div>
-                  </div>
-                )}
 
-                {activeTab === "claim" && (
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">
-                      Klaim Pesanan Tamu
-                    </h2>
-                    <p className="text-gray-500 text-sm mb-6">
-                      Gunakan ID dan kode akses yang Anda terima saat checkout.
-                      Email akun harus sudah terverifikasi dan sama dengan email
-                      pesanan.
-                    </p>
-
-                    <form
-                      onSubmit={claim}
-                      className="max-w-md space-y-4 bg-gray-50 p-5 rounded-xl border border-gray-100"
-                    >
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          ID Pesanan
-                        </label>
-                        <input
-                          name="order_id"
-                          required
-                          maxLength={128}
-                          autoComplete="off"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Contoh: ORD-12345"
-                        />
+                      <div className="mt-8 flex flex-wrap gap-4 pt-6 border-t border-gray-100">
+                        <Link
+                          href="/bantuan"
+                          className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                        >
+                          Riwayat Tiket Bantuan &rarr;
+                        </Link>
+                        {(profile?.platform_role === "super_admin" ||
+                          profile?.can_manage_services) && (
+                          <>
+                            <span className="text-gray-300">|</span>
+                            <Link
+                              href="/petugas"
+                              className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                            >
+                              Portal Petugas &rarr;
+                            </Link>
+                          </>
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Kode Akses
-                        </label>
-                        <input
-                          name="access_token"
-                          required
-                          minLength={48}
-                          maxLength={48}
-                          autoComplete="off"
-                          type="password"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                          placeholder="Masukkan 48 karakter kode"
-                        />
-                      </div>
-                      <button
-                        disabled={busy}
-                        className="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70 mt-2"
-                      >
-                        {busy ? "Memproses…" : "Tautkan Pesanan"}
-                      </button>
-                    </form>
 
-                    <div className="mt-8 flex gap-4 pt-6 border-t border-gray-100">
-                      <Link
-                        href="/petugas"
-                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-                      >
-                        Portal Petugas &rarr;
-                      </Link>
-                      <span className="text-gray-300">|</span>
-                      <Link
-                        href="/bantuan"
-                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-                      >
-                        Riwayat Tiket Bantuan &rarr;
-                      </Link>
+                      {/* Hak Privasi & Hapus Data (UU PDP) */}
+                      <div className="mt-8 pt-6 border-t border-gray-100">
+                        <h3 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-1.5">
+                          <ShieldCheck size={16} className="text-emerald-600" />
+                          Hak Privasi & Hapus Data (UU PDP No. 27/2022)
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                          Anda berhak meminta penghapusan akun serta data identitas pribadi Anda dari sistem kami kapan saja. Catatan transaksi keuangan tetap diarsipkan secara anonim untuk kepatuhan perpajakan.
+                        </p>
+
+                        {deletionRequest ? (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                            <div className="font-semibold flex items-center gap-1.5 mb-0.5">
+                              <Clock size={13} /> Permintaan Penghapusan Akun Aktif
+                            </div>
+                            <p className="text-amber-800">
+                              Status: <strong>{deletionRequest.status === "requested" ? "Menunggu Antrean Pemrosesan" : deletionRequest.status}</strong>
+                            </p>
+                            {deletionRequest.requested_at && (
+                              <p className="text-slate-500 mt-1">
+                                Diajukan pada: {new Date(deletionRequest.requested_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeletionModalOpen(true);
+                              setDeletionReason("");
+                              setDeletionError("");
+                            }}
+                            className="px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <Trash2 size={13} /> Ajukan Penghapusan Akun
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
               </section>
+            </div>
+          </div>
+        )}
+        {reviewingOrder && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                maxWidth: "500px",
+                width: "100%",
+                padding: "1.75rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <h3 id="review-modal-title" style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                  Beri Ulasan Wisata
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setReviewingOrder(null)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                  aria-label="Tutup modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "1.25rem" }}>
+                Bagikan pengalaman Anda untuk <strong>{reviewingOrder.items?.[0]?.name || "kegiatan wisata ini"}</strong>.
+              </p>
+
+              <form onSubmit={submitReview}>
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.5rem" }}>
+                    Rating Kepuasan
+                  </label>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const active = (reviewHoverRating || reviewRating) >= star;
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          onMouseEnter={() => setReviewHoverRating(star)}
+                          onMouseLeave={() => setReviewHoverRating(0)}
+                          onClick={() => setReviewRating(star)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "4px",
+                            transition: "transform 0.1s",
+                          }}
+                          aria-label={`Beri rating ${star} bintang`}
+                        >
+                          <Star
+                            size={28}
+                            fill={active ? "#f59e0b" : "transparent"}
+                            color={active ? "#f59e0b" : "#cbd5e1"}
+                          />
+                        </button>
+                      );
+                    })}
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#b45309", marginLeft: "0.5rem" }}>
+                      {reviewRating === 5
+                        ? "Luar Biasa (5/5)"
+                        : reviewRating === 4
+                          ? "Sangat Bagus (4/5)"
+                          : reviewRating === 3
+                            ? "Cukup (3/5)"
+                            : reviewRating === 2
+                              ? "Kurang Puas (2/5)"
+                              : "Mengecewakan (1/5)"}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <label htmlFor="review-comment" style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.5rem" }}>
+                    Catatan / Komentar (opsional)
+                  </label>
+                  <textarea
+                    id="review-comment"
+                    rows={4}
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    maxLength={1000}
+                    placeholder="Ceritakan keseruan, pemandu, fasilitas, atau tips untuk pengunjung lain..."
+                    style={{
+                      width: "100%",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      padding: "0.75rem",
+                      fontSize: "0.875rem",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                  <div style={{ textAlign: "right", fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                    {reviewComment.length}/1000 karakter
+                  </div>
+                </div>
+
+                {reviewError && (
+                  <div style={{ padding: "0.75rem", background: "#fef2f2", color: "#b91c1c", borderRadius: "8px", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                    {reviewError}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setReviewingOrder(null)}
+                    disabled={reviewBusy}
+                    className="ui-button ui-button-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reviewBusy}
+                    className="ui-button"
+                  >
+                    {reviewBusy ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Mengirim…
+                      </>
+                    ) : (
+                      "Kirim Ulasan"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Form Modal Ajukan Sengketa */}
+        {disputeOrder && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dispute-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                maxWidth: "520px",
+                width: "100%",
+                padding: "1.75rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <AlertTriangle size={20} className="text-rose-600" />
+                  <h3 id="dispute-modal-title" style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                    Ajukan Komplain / Sengketa
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDisputeOrder(null)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                  aria-label="Tutup modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "1rem" }}>
+                Pesanan <strong>{disputeOrder.order_id}</strong> ({disputeOrder.items?.[0]?.name || "Wisata"}). Aduan akan dimediasi oleh tim operasional platform.
+              </p>
+
+              {disputeError && (
+                <div style={{ padding: "0.75rem", background: "#fef2f2", color: "#b91c1c", borderRadius: "8px", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                  {disputeError}
+                </div>
+              )}
+
+              <form onSubmit={submitDispute}>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                    Kategori Kendala / Alasan Sengketa:
+                  </label>
+                  <select
+                    value={disputeReason}
+                    onChange={(e) => setDisputeReason(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.6rem 0.75rem",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "0.875rem",
+                      background: "#ffffff",
+                    }}
+                  >
+                    <option value="Layanan Tidak Sesuai Deskripsi">Layanan Tidak Sesuai Deskripsi</option>
+                    <option value="Pemandu / Petugas Tidak Hadir di Lokasi">Pemandu / Petugas Tidak Hadir di Lokasi</option>
+                    <option value="Pembatalan Sepihak oleh Pengelola">Pembatalan Sepihak oleh Pengelola</option>
+                    <option value="Keterlambatan / Perubahan Jadwal Ekstrem">Keterlambatan / Perubahan Jadwal Ekstrem</option>
+                    <option value="Fasilitas / Kebersihan Tidak Layak">Fasilitas / Kebersihan Tidak Layak</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                    Kronologi & Rincian Masalah:
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={disputeDescription}
+                    onChange={(e) => setDisputeDescription(e.target.value)}
+                    placeholder="Ceritakan kejadian secara jelas (waktu, lokasi, apa yang tidak terpenuhi)..."
+                    style={{
+                      width: "100%",
+                      padding: "0.6rem 0.75rem",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "0.875rem",
+                      lineHeight: 1.5,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setDisputeOrder(null)}
+                    disabled={disputeBusy}
+                    className="ui-button ui-button-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={disputeBusy}
+                    className="ui-button"
+                    style={{ background: "#e11d48", borderColor: "#e11d48" }}
+                  >
+                    {disputeBusy ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Mengirim…
+                      </>
+                    ) : (
+                      "Kirim Laporan Sengketa"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Detail & Status Sengketa yang Sudah Diajukan */}
+        {viewingDispute && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="view-dispute-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                maxWidth: "500px",
+                width: "100%",
+                padding: "1.75rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <ShieldAlert size={20} className="text-amber-600" />
+                  <h3 id="view-dispute-modal-title" style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                    Status Sengketa #{viewingDispute.id}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingDispute(null)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                  aria-label="Tutup modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem", fontSize: "0.875rem" }}>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Status Terkini:</span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold mt-0.5 ${viewingDispute.status === "open" ? "bg-amber-100 text-amber-800" : viewingDispute.status === "under_review" ? "bg-blue-100 text-blue-800" : viewingDispute.status === "resolved" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>
+                    {viewingDispute.status === "open" ? "Menunggu Peninjauan Petugas" : viewingDispute.status === "under_review" ? "Sedang Diinvestigasi Tim Mediasi" : viewingDispute.status === "resolved" ? "Terselesaikan / Solusi Diberikan" : "Sengketa Ditutup"}
+                  </span>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Alasan Komplain:</span>
+                  <strong style={{ color: "#0f172a" }}>{viewingDispute.reason}</strong>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>Kronologi yang Anda Laporkan:</span>
+                  <p style={{ color: "#334155", background: "#f8fafc", padding: "0.6rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", margin: "0.2rem 0 0" }}>
+                    {viewingDispute.description || "-"}
+                  </p>
+                </div>
+
+                {viewingDispute.resolution && (
+                  <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "0.75rem", borderRadius: "8px" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#065f46", fontWeight: 700, display: "block" }}>
+                      Putusan Resolusi Mediator Platform:
+                    </span>
+                    <p style={{ color: "#047857", margin: "0.25rem 0 0", fontSize: "0.875rem", lineHeight: 1.5 }}>
+                      {viewingDispute.resolution}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1.25rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setViewingDispute(null)}
+                  className="ui-button ui-button-outline"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Konfirmasi Hapus Akun (UU PDP) */}
+        {deletionModalOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deletion-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                maxWidth: "500px",
+                width: "100%",
+                padding: "1.75rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Trash2 size={20} className="text-red-600" />
+                  <h3 id="deletion-modal-title" style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                    Konfirmasi Penghapusan Akun
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeletionModalOpen(false)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                  aria-label="Tutup modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.8rem", color: "#991b1b", lineHeight: 1.5 }}>
+                Sesuai UU Perlindungan Data Pribadi (UU PDP No. 27/2022), data pribadi, profil, dan token login Anda akan dianonimkan atau dihapus. Riwayat transaksi finansial tetap diarsipkan secara anonim untuk pembukuan akuntansi.
+              </div>
+
+              {deletionError && (
+                <div style={{ padding: "0.75rem", background: "#fef2f2", color: "#b91c1c", borderRadius: "8px", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                  {deletionError}
+                </div>
+              )}
+
+              <form onSubmit={submitDeletionRequest}>
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                    Alasan Penutupan Akun (Opsional):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={deletionReason}
+                    onChange={(e) => setDeletionReason(e.target.value)}
+                    placeholder="Beri tahu kami alasan Anda menutup akun..."
+                    style={{
+                      width: "100%",
+                      padding: "0.6rem 0.75rem",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      fontSize: "0.875rem",
+                      lineHeight: 1.5,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeletionModalOpen(false)}
+                    disabled={deletionBusy}
+                    className="ui-button ui-button-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deletionBusy}
+                    className="ui-button"
+                    style={{ background: "#dc2626", borderColor: "#dc2626" }}
+                  >
+                    {deletionBusy ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Mengirim…
+                      </>
+                    ) : (
+                      "Ya, Ajukan Hapus Akun"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Kelola Manifest Peserta Rombongan */}
+        {manifestOrder && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manifest-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                maxWidth: "650px",
+                width: "100%",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                padding: "1.75rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Users size={22} className="text-blue-600" />
+                  <h3 id="manifest-modal-title" style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                    Manifest Peserta Rombongan
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setManifestOrder(null)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                  aria-label="Tutup modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                <p style={{ fontSize: "0.85rem", color: "#64748b", margin: 0 }}>
+                  Pesanan <strong>{manifestOrder.order_id}</strong> ({manifestOrder.items?.[0]?.name || "Tiket Wisata"}).
+                </p>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-200">
+                  Total Tiket: {manifestOrder.items?.[0]?.quantity || 1} Pax
+                </span>
+              </div>
+
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.8rem", color: "#475569", lineHeight: 1.5 }}>
+                Daftar nama peserta digunakan untuk administrasi tiket masuk kawasan wisata dan klaim asuransi keselamatan pengunjung. Masukkan nama sesuai kartu identitas.
+              </div>
+
+              {manifestError && (
+                <div style={{ padding: "0.75rem", background: "#fef2f2", color: "#b91c1c", borderRadius: "8px", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                  {manifestError}
+                </div>
+              )}
+
+              <form onSubmit={saveManifest}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.25rem" }}>
+                  {manifestParticipants.map((row, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: "1rem",
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "10px",
+                        position: "relative",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b" }}>
+                          Peserta #{idx + 1} {idx === 0 ? "(Pemesan Utama)" : ""}
+                        </span>
+                        {manifestParticipants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeParticipantRow(idx)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#ef4444",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              padding: "2px 6px",
+                            }}
+                          >
+                            Hapus Baris
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#475569", marginBottom: "0.25rem" }}>
+                            Nama Lengkap (Wajib) *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={row.name}
+                            onChange={(e) => updateParticipantField(idx, "name", e.target.value)}
+                            placeholder="Sesuai KTP / Paspor"
+                            style={{
+                              width: "100%",
+                              padding: "0.45rem 0.65rem",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              fontSize: "0.85rem",
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#475569", marginBottom: "0.25rem" }}>
+                            NIK / No. Paspor (Asuransi)
+                          </label>
+                          <input
+                            type="text"
+                            value={row.id_number}
+                            onChange={(e) => updateParticipantField(idx, "id_number", e.target.value)}
+                            placeholder="16 digit NIK / Paspor"
+                            style={{
+                              width: "100%",
+                              padding: "0.45rem 0.65rem",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              fontSize: "0.85rem",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#475569", marginBottom: "0.25rem" }}>
+                            No. Telepon / WhatsApp
+                          </label>
+                          <input
+                            type="text"
+                            value={row.phone}
+                            onChange={(e) => updateParticipantField(idx, "phone", e.target.value)}
+                            placeholder="Contoh: 08123456789"
+                            style={{
+                              width: "100%",
+                              padding: "0.45rem 0.65rem",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              fontSize: "0.85rem",
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#475569", marginBottom: "0.25rem" }}>
+                            Catatan Medis / Alergi / Darurat
+                          </label>
+                          <input
+                            type="text"
+                            value={row.notes}
+                            onChange={(e) => updateParticipantField(idx, "notes", e.target.value)}
+                            placeholder="Contoh: Asma, vegetarian, kontak darurat..."
+                            style={{
+                              width: "100%",
+                              padding: "0.45rem 0.65rem",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              fontSize: "0.85rem",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginBottom: "1.25rem" }}>
+                  <button
+                    type="button"
+                    onClick={addParticipantRow}
+                    style={{
+                      width: "100%",
+                      padding: "0.55rem",
+                      border: "1px dashed #93c5fd",
+                      background: "#eff6ff",
+                      color: "#2563eb",
+                      borderRadius: "8px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    + Tambah Baris Peserta
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setManifestOrder(null)}
+                    disabled={manifestBusy}
+                    className="ui-button ui-button-outline"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={manifestBusy}
+                    className="ui-button ui-button-primary"
+                  >
+                    {manifestBusy ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Menyimpan…
+                      </>
+                    ) : (
+                      "Simpan Manifest Peserta"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Kirim Tiket & Voucher ke WhatsApp */}
+        {whatsAppModalOrder && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="whatsapp-modal-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.65)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1rem",
+              zIndex: 9999,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: "1.25rem",
+                width: "100%",
+                maxWidth: "480px",
+                padding: "1.5rem",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                <div>
+                  <h3 id="whatsapp-modal-title" style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Smartphone size={20} className="text-emerald-600" /> Kirim Tiket ke WhatsApp
+                  </h3>
+                  <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0.25rem 0 0" }}>
+                    Pesanan #{whatsAppModalOrder.order_id?.slice(0, 8)} • {whatsAppModalOrder.items?.[0]?.name || "Tiket Wisata"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWhatsAppModalOrder(null)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {waError && (
+                <div style={{ padding: "0.75rem", borderRadius: "0.5rem", backgroundColor: "#fef2f2", color: "#991b1b", fontSize: "0.8rem", marginBottom: "1rem", border: "1px solid #fecaca" }}>
+                  {waError}
+                </div>
+              )}
+
+              {waResult ? (
+                <div style={{ textAlign: "center", padding: "1rem 0" }}>
+                  <div style={{ width: "48px", height: "48px", borderRadius: "50%", backgroundColor: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem" }}>
+                    <CheckCircle2 size={28} />
+                  </div>
+                  <h4 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#065f46" }}>
+                    Notifikasi Berhasil Dikirim!
+                  </h4>
+                  <p style={{ fontSize: "0.8rem", color: "#475569", margin: "0.5rem 0 1.25rem" }}>
+                    Tautan e-tiket dan kode QR voucher telah dikirimkan ke nomor <strong>{waResult.phone}</strong>.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <a
+                      href={waResult.direct_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ui-button ui-button-primary"
+                      style={{ backgroundColor: "#16a34a", borderColor: "#16a34a", textDecoration: "none", display: "inline-flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}
+                    >
+                      <Send size={16} /> Buka WhatsApp Sekarang
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setWhatsAppModalOrder(null)}
+                      className="ui-button ui-button-outline"
+                    >
+                      Selesai
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={sendWhatsAppVoucher}>
+                  <div style={{ marginBottom: "1.25rem" }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                      Nomor WhatsApp Tujuan (Aktif)
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="Contoh: 081234567890"
+                      value={waPhone}
+                      onChange={(e) => setWaPhone(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "0.6rem 0.75rem",
+                        borderRadius: "0.5rem",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        outline: "none",
+                      }}
+                    />
+                    <span style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginTop: "0.35rem" }}>
+                      Format nomor didukung: 08xx atau 628xx. Tautan e-tiket dan QR voucher akan dikirim ke nomor ini.
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      onClick={() => setWhatsAppModalOrder(null)}
+                      disabled={waBusy}
+                      className="ui-button ui-button-outline"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={waBusy}
+                      className="ui-button ui-button-primary"
+                      style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
+                    >
+                      {waBusy ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" /> Mengirim…
+                        </>
+                      ) : (
+                        <>
+                          <Send size={15} /> Kirim ke WhatsApp
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

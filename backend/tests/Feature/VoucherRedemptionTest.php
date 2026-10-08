@@ -95,6 +95,28 @@ class VoucherRedemptionTest extends TestCase
         $this->assertDatabaseCount('voucher_check_ins', 0);
     }
 
+    public function test_staff_can_check_voucher_details(): void
+    {
+        [$voucher, $staff] = $this->voucher();
+
+        $response = $this->actingAs($staff)->postJson('/api/v1/staff/vouchers/check', ['token' => str_repeat('a', 48)]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.admissions', 2)
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.is_today', true);
+    }
+
+    public function test_super_admin_can_redeem_without_partner_membership(): void
+    {
+        [$voucher] = $this->voucher();
+        $admin = User::factory()->create(['platform_role' => 'super_admin']);
+
+        $this->actingAs($admin)->postJson('/api/v1/staff/vouchers/redeem', ['token' => str_repeat('a', 48)])->assertOk();
+
+        $this->assertSame(2, $voucher->fresh()->used_admissions);
+    }
+
     private function voucher(): array
     {
         $this->freezeTime();

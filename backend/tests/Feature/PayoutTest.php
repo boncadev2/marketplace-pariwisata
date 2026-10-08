@@ -169,4 +169,15 @@ class PayoutTest extends TestCase
         $this->assertDatabaseCount('payout_items', 0);
         $this->assertSame('eligible', $order->fresh()->payout_status);
     }
+
+    public function test_admin_can_list_payout_batches(): void
+    {
+        $admin = User::factory()->create(['platform_role' => 'super_admin']);
+        PayoutBatch::factory()->count(2)->create();
+
+        $this->actingAs($admin)->getJson('/api/v1/payouts/batches')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'current_page', 'total']);
+    }
 }
+

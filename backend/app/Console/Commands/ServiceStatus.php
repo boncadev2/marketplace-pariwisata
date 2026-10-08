@@ -36,6 +36,8 @@ class ServiceStatus extends Command
             ['Refund Midtrans', $midtrans && $gateway->isConfigured() && config('services.midtrans.refunds_enabled') && config('services.refund.driver') === $driver, 'REFUND_DRIVER harus sama dengan PAYMENT_GATEWAY; MIDTRANS_REFUNDS_ENABLED=true'],
             ['Biteship', app(BiteshipClient::class)->configured(), 'SHIPPING_DRIVER=biteship, SHIPPING_PROVIDER_ENABLED=true, BITESHIP_API_KEY'],
             ['SMTP eksternal', $smtpReady, 'MAIL_MAILER=smtp, MAIL_HOST, MAIL_PORT, MAIL_SCHEME, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_ADDRESS'],
+            ['WhatsApp Gateway', filled(config('services.whatsapp.token')) || config('services.whatsapp.driver') === 'log', 'WHATSAPP_TOKEN, WHATSAPP_DRIVER=fonnte/generic/log'],
+            ['Cadangan database', count(glob(storage_path('app/backups/backup-*.sql*'))) > 0, 'php artisan app:backup-database --compress'],
         ];
         $this->table(['Layanan', 'Konfigurasi', 'Pengaturan yang diperlukan'], array_map(fn ($row) => [$row[0], $row[1] ? 'Terisi' : 'Belum lengkap', $row[2]], $rows));
         $this->info('Terisi berarti konfigurasi tersedia, bukan bukti layanan berhasil terhubung. Tidak ada permintaan provider atau pengiriman email dari perintah ini.');

@@ -15,13 +15,13 @@ use Illuminate\Support\Str;
 
 class CheckoutService
 {
-    public function create(Product $product, CarbonImmutable $visitDate, int $quantity, string $name, string $email, string $idempotencyKey, ?string $couponCode = null, ?User $user = null, ?int $expectedTotal = null, ?string $crossVillageVersion = null): array
+    public function create(Product $product, CarbonImmutable $visitDate, int $quantity, string $name, string $email, string $idempotencyKey, ?string $couponCode = null, ?User $user = null, ?int $expectedTotal = null, ?string $crossVillageVersion = null, ?array $participants = null, ?string $customerPhone = null): array
     {
         if ($crossVillageVersion !== null) {
             abort_unless(app()->environment(['local', 'testing']), 503, 'Checkout lintas desa hanya tersedia di sandbox lokal.');
         }
 
-        return DB::transaction(function () use ($product, $visitDate, $quantity, $name, $email, $idempotencyKey, $couponCode, $user, $expectedTotal, $crossVillageVersion): array {
+        return DB::transaction(function () use ($product, $visitDate, $quantity, $name, $email, $idempotencyKey, $couponCode, $user, $expectedTotal, $crossVillageVersion, $participants, $customerPhone): array {
             if ($couponCode !== null) {
                 abort_unless(app()->environment(['local', 'testing']), 503, 'Promo hanya tersedia untuk checkout sandbox lokal.');
                 abort_unless($user !== null && $user->hasVerifiedEmail(), 403, 'Kupon membutuhkan akun dengan email terverifikasi.');
@@ -90,7 +90,7 @@ class CheckoutService
             }
             $hold = app(InventoryReservationService::class)->reserve($bucket, $quantity, CarbonImmutable::now()->addMinutes(15));
             $guestToken = Str::random(48);
-            $order = Order::create(['public_id' => (string) Str::uuid(), 'partner_id' => $product->partner_id, 'idempotency_key' => $idempotencyKey, 'guest_access_hash' => Hash::make($guestToken), 'customer_name' => $name, 'customer_email' => $email, 'currency' => $quote['currency'], 'total' => $quote['total'], 'user_id' => $user?->id, 'policy_snapshot' => ['visit_date' => $visitDate->toDateString(), 'coupon_code' => $couponCode, 'promotion' => $promotion, 'cross_village_version' => $crossVillageVersion]]);
+            $order = Order::create(['public_id' => (string) Str::uuid(), 'partner_id' => $product->partner_id, 'idempotency_key' => $idempotencyKey, 'guest_access_hash' => Hash::make($guestToken), 'customer_name' => $name, 'customer_email' => $email, 'currency' => $quote['currency'], 'total' => $quote['total'], 'user_id' => $user?->id, 'policy_snapshot' => ['visit_date' => $visitDate->toDateString(), 'coupon_code' => $couponCode, 'promotion' => $promotion, 'cross_village_version' => $crossVillageVersion, 'participants' => $participants ?: [], 'customer_phone' => $customerPhone]]);
             $commission = app(CommissionService::class)->calculate($product, $quote['total'], $visitDate);
             $order->items()->create(['product_id' => $product->id, 'name' => $product->name, 'quantity' => $quantity, 'unit_price' => $quote['unit_price'], 'total' => $quote['total'], 'commission_rule_id' => $commission['commission_rule_id'], 'commission_amount' => $commission['commission_amount'], 'snapshot' => ['product_slug' => $product->slug, 'visit_date' => $visitDate->toDateString(), 'inventory_hold_id' => $hold->id, 'subtotal' => $subtotal, 'discount' => $promotion['discount'] ?? 0]]);
 

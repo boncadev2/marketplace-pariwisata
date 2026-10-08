@@ -17,6 +17,19 @@ return [
     'payment_reconciliation' => [
         'requests_per_minute' => env('PAYMENT_RECONCILIATION_REQUESTS_PER_MINUTE', 30),
     ],
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_GATEWAY_DRIVER', 'mock'),
+        'token' => env('WHATSAPP_API_TOKEN'),
+    ],
+    'payout' => [
+        'driver' => env('PAYOUT_DRIVER', 'unconfigured'),
+        'sandbox_enabled' => (bool) env('PAYOUT_SANDBOX_ENABLED', true),
+        'iris' => [
+            'api_key' => env('IRIS_API_KEY'),
+            'merchant_key' => env('IRIS_MERCHANT_KEY'),
+            'base_url' => env('IRIS_BASE_URL', 'https://app.sandbox.midtrans.com/iris/api/v1'),
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

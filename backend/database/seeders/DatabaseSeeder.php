@@ -28,5 +28,6 @@ class DatabaseSeeder extends Seeder
         Destination::create(['partner_id' => $partnerA->id, 'region_id' => $village->id, 'category_id' => $nature->id, 'name' => 'Air Terjun Demo', 'slug' => 'air-terjun-demo', 'publication_status' => 'published']);
         $destination = Destination::create(['partner_id' => $partnerB->id, 'region_id' => $village->id, 'category_id' => $culture->id, 'name' => 'Kampung Budaya Demo', 'slug' => 'kampung-budaya-demo', 'publication_status' => 'published']);
         Product::create(['partner_id' => $partnerB->id, 'destination_id' => $destination->id, 'name' => 'Tiket Kampung Budaya Demo', 'slug' => 'tiket-kampung-budaya-demo', 'type' => 'ticket', 'base_price' => 25000, 'status' => 'draft']);
+        $this->call(ArticleDemoSeeder::class);
     }
 }

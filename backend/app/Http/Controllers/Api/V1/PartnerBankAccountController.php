@@ -13,7 +13,28 @@ class PartnerBankAccountController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $partnerId = $this->authorizedPartnerId($request, (int) $request->integer('partner_id'));
+        $user = $request->user();
+
+        if ($user->platform_role === 'super_admin' && ! $request->filled('partner_id')) {
+            $accounts = PartnerBankAccount::query()->with('partner:id,name')->latest('id')->get();
+
+            return response()->json([
+                'data' => $accounts->map(fn (PartnerBankAccount $account) => [
+                    ...$this->summary($account),
+                    'partner' => $account->partner ? ['id' => $account->partner->id, 'name' => $account->partner->name] : null,
+                ])->all(),
+            ]);
+        }
+
+        $partnerId = (int) $request->integer('partner_id');
+        if ($partnerId === 0 && $user->platform_role !== 'super_admin') {
+            $membership = $user->partnerMemberships()->where('is_active', true)->first();
+            if ($membership) {
+                $partnerId = $membership->partner_id;
+            }
+        }
+
+        $partnerId = $this->authorizedPartnerId($request, $partnerId);
         $accounts = PartnerBankAccount::query()->where('partner_id', $partnerId)->get();
 
         return response()->json(['data' => $this->summaries($accounts)]);
@@ -21,6 +42,14 @@ class PartnerBankAccountController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $inputPartnerId = $request->input('partner_id');
+        if (! $inputPartnerId && $request->user()->platform_role !== 'super_admin') {
+            $membership = $request->user()->partnerMemberships()->where('is_active', true)->whereIn('role', ['owner', 'manager'])->first();
+            if ($membership) {
+                $request->merge(['partner_id' => $membership->partner_id]);
+            }
+        }
+
         $validated = $request->validate([
             'partner_id' => 'required|exists:partners,id',
             'bank_name' => 'required|string|max:255',

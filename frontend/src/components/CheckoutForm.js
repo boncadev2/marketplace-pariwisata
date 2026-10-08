@@ -10,6 +10,7 @@ const initialForm = {
   quantity: "1",
   customer_name: "",
   customer_email: "",
+  customer_phone: "",
   coupon_code: "",
 };
 
@@ -62,6 +63,8 @@ export function CheckoutForm({
     reason: "Memeriksa status checkout…",
   });
   const [promos, setPromos] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [showParticipantsForm, setShowParticipantsForm] = useState(false);
   const online = useSyncExternalStore(
     subscribeToConnectivity,
     getConnectivitySnapshot,
@@ -229,11 +232,13 @@ export function CheckoutForm({
       "Memvalidasi harga dan stok di server. Jangan tutup halaman ini…"
     );
     idempotencyKey.current ||= crypto.randomUUID();
+    const validParticipants = participants.filter((p) => p.name?.trim());
     const body =
       pendingCheckout ??
       JSON.stringify({
         ...form,
         quantity: Number(form.quantity),
+        participants: validParticipants.length > 0 ? validParticipants : undefined,
         expected_total:
           form.coupon_code.trim() || quote?.cross_village
             ? quote?.total
@@ -410,6 +415,28 @@ export function CheckoutForm({
               className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 font-normal"
             />
           </label>
+
+          <label
+            className="sm:col-span-2 font-semibold text-gray-800"
+            htmlFor="customer_phone"
+          >
+            Nomor WhatsApp (Opsional, untuk pengiriman E-Tiket)
+            <input
+              id="customer_phone"
+              name="customer_phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="Contoh: 081234567890"
+              value={form.customer_phone}
+              onChange={updateField}
+              maxLength={30}
+              className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 font-normal"
+            />
+            <span className="mt-1 block text-xs font-normal text-gray-500">
+              Voucher dan QR Code masuk akan dikirimkan langsung ke WhatsApp Anda begitu pembayaran terverifikasi.
+            </span>
+          </label>
           <label
             className="sm:col-span-2 font-semibold text-gray-800"
             htmlFor="coupon_code"
@@ -451,6 +478,97 @@ export function CheckoutForm({
               produksi.
             </span>
           </label>
+
+          {/* Manifest Peserta Rombongan (Opsional saat checkout) */}
+          <div className="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="font-semibold text-gray-800 text-sm block">
+                  Manifest Peserta Rombongan ({form.quantity} Orang)
+                </span>
+                <span className="text-xs text-gray-500">
+                  Opsional: Anda dapat melengkapi nama anggota rombongan sekarang, atau mengisinya nanti di dasbor akun.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !showParticipantsForm;
+                  setShowParticipantsForm(nextState);
+                  if (nextState && participants.length === 0) {
+                    const rows = [];
+                    const qty = Number(form.quantity) || 1;
+                    for (let i = 0; i < qty; i++) {
+                      rows.push({
+                        name: i === 0 ? form.customer_name : "",
+                        id_number: "",
+                        phone: "",
+                        notes: "",
+                      });
+                    }
+                    setParticipants(rows);
+                  }
+                }}
+                className="self-start sm:self-auto text-xs font-semibold text-blue-700 bg-white border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+              >
+                {showParticipantsForm ? "Tutup Form Manifest" : "Isi Manifest Sekarang"}
+              </button>
+            </div>
+
+            {showParticipantsForm && (
+              <div className="mt-4 space-y-3">
+                {participants.map((p, idx) => (
+                  <div key={idx} className="p-3 bg-white border border-gray-200 rounded-lg text-xs space-y-2">
+                    <span className="font-bold text-gray-700 block">
+                      Peserta #{idx + 1} {idx === 0 ? "(Pemesan Utama)" : ""}
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nama Lengkap (sesuai KTP/Paspor)"
+                        value={p.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setParticipants((prev) =>
+                            prev.map((item, i) =>
+                              i === idx ? { ...item, name: val } : item
+                            )
+                          );
+                        }}
+                        className="p-2 border border-gray-300 rounded-md w-full"
+                      />
+                      <input
+                        type="text"
+                        placeholder="NIK / No. Identitas (Opsional)"
+                        value={p.id_number}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setParticipants((prev) =>
+                            prev.map((item, i) =>
+                              i === idx ? { ...item, id_number: val } : item
+                            )
+                          );
+                        }}
+                        className="p-2 border border-gray-300 rounded-md w-full"
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setParticipants((prev) => [
+                      ...prev,
+                      { name: "", id_number: "", phone: "", notes: "" },
+                    ])
+                  }
+                  className="w-full py-1.5 border border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-50 text-blue-700 rounded-lg font-semibold text-xs transition"
+                >
+                  + Tambah Baris Peserta
+                </button>
+              </div>
+            )}
+          </div>
         </fieldset>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">

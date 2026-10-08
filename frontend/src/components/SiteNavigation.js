@@ -22,6 +22,12 @@ import {
   SlidersHorizontal,
   Loader2,
   MapPin,
+  Star,
+  Wallet,
+  Tag,
+  TrendingUp,
+  ShieldAlert,
+  BookOpen,
 } from "lucide-react";
 
 import { apiRequest } from "../lib/api";
@@ -33,6 +39,7 @@ const products = [
   { href: "/paket", label: "Paket wisata", icon: Map },
   { href: "/umkm", label: "Produk UMKM", icon: Store },
   { href: "/kuliner", label: "Kuliner", icon: Utensils },
+  { href: "/artikel", label: "Artikel", icon: BookOpen },
 ];
 
 const workspaceProducts = [
@@ -108,6 +115,55 @@ const workspaceOperations = [
     label: "Kesiapan produksi",
     desc: "Monitoring kesiapan dapur & stok",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/dashboard/ulasan",
+    admin: true,
+    label: "Moderasi ulasan",
+    desc: "Kelola ulasan & rating pengunjung",
+    icon: Star,
+  },
+  {
+    href: "/dashboard/payout",
+    admin: true,
+    label: "Pencairan dana & rekening",
+    desc: "Batch payout & rekening bank mitra",
+    icon: Wallet,
+  },
+  {
+    href: "/dashboard/tiket-bantuan",
+    admin: true,
+    label: "Tiket bantuan pelanggan",
+    desc: "Tanggapi aduan & pertanyaan pengunjung",
+    icon: Headphones,
+  },
+  {
+    href: "/dashboard/sengketa",
+    admin: true,
+    label: "Sengketa operasional",
+    desc: "Mediasi & resolusi komplain pesanan",
+    icon: ShieldAlert,
+  },
+  {
+    href: "/dashboard/kupon",
+    admin: true,
+    label: "Kupon & promo diskon",
+    desc: "Voucher diskon & promosi belanja",
+    icon: Tag,
+  },
+  {
+    href: "/dashboard/artikel",
+    admin: true,
+    label: "Artikel & blog wisata",
+    desc: "Publikasi cerita, tips & panduan",
+    icon: BookOpen,
+  },
+  {
+    href: "/dashboard/pendapatan",
+    admin: true,
+    label: "Laporan pendapatan & analitik",
+    desc: "Arus kas, komisi platform & transaksi",
+    icon: TrendingUp,
   },
   {
     href: "/reconciliation",
@@ -352,16 +408,19 @@ export function SiteNavigation() {
       }
     }
   }
-  const isWorkspace =
-    pathname.startsWith("/dashboard") ||
-    pathname === "/reconciliation" ||
-    pathname === "/petugas";
-
+  const isAuthenticated = Boolean(profile);
   const isAdmin = Boolean(
     profile?.platform_role === "super_admin" ||
       profile?.role === "admin" ||
       profile?.can_manage_services
   );
+
+  const isWorkspace =
+    isAuthenticated &&
+    isAdmin &&
+    (pathname.startsWith("/dashboard") ||
+      pathname === "/reconciliation" ||
+      pathname === "/petugas");
 
   const isDashboardActive = pathname === "/dashboard";
   const isProductActive = workspaceProducts.some((item) =>
@@ -662,7 +721,7 @@ export function SiteNavigation() {
             </nav>
           )}
           <div className="nav-actions">
-            {!isAdmin && (
+            {isAuthenticated && !isAdmin && (
               <Link href="/akun" className="nav-orders">
                 <Ticket size={18} /> Pesanan saya
               </Link>
@@ -889,7 +948,11 @@ export function SiteNavigation() {
         {[
           { href: "/", label: "Beranda", icon: Compass },
           { href: "/destinasi", label: "Jelajahi", icon: Map },
-          { href: "/akun", label: "Pesanan", icon: Ticket },
+          {
+            href: isAuthenticated ? "/akun" : "/login",
+            label: isAuthenticated ? "Pesanan" : "Masuk",
+            icon: isAuthenticated ? Ticket : UserRound,
+          },
           { href: "/bantuan", label: "Bantuan", icon: Headphones },
         ].map(({ href, label, icon: Icon }) => (
           <Link

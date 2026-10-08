@@ -96,4 +96,43 @@ class AccountOrdersTest extends TestCase
         $order->update(['status' => 'refunded']);
         $this->actingAs($owner)->getJson($uri)->assertOk()->assertJsonCount(0, 'data.vouchers');
     }
+
+    public function test_user_can_update_tour_participants_manifest(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $owner->id, 'status' => 'paid']);
+
+        $uri = '/api/v1/account/orders/'.$order->public_id.'/participants';
+        $payload = [
+            'participants' => [
+                [
+                    'name' => 'Budi Santoso',
+                    'id_number' => '3201123456780001',
+                    'phone' => '08123456789',
+                    'notes' => 'Vegetarian',
+                ],
+                [
+                    'name' => 'Siti Rahma',
+                    'id_number' => '3201123456780002',
+                    'phone' => '08129876543',
+                    'notes' => '',
+                ],
+            ],
+        ];
+
+        $this->postJson($uri, $payload)->assertUnauthorized();
+        $this->actingAs($stranger)->postJson($uri, $payload)->assertNotFound();
+
+        $response = $this->actingAs($owner)->postJson($uri, $payload);
+        $response->assertOk()
+            ->assertJsonPath('data.order_id', $order->public_id)
+            ->assertJsonCount(2, 'data.participants')
+            ->assertJsonPath('data.participants.0.name', 'Budi Santoso');
+
+        $this->assertSame(
+            'Budi Santoso',
+            $order->fresh()->policy_snapshot['participants'][0]['name']
+        );
+    }
 }

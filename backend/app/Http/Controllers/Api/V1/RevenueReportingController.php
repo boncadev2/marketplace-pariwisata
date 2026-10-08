@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\RevenueReportingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class RevenueReportingController extends Controller
 {
@@ -13,14 +14,29 @@ class RevenueReportingController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        // Assuming admin can view all, or partner can view their own.
-        // For now, allow filtering by partner_id
         $partnerId = $request->query('partner_id') ? (int) $request->query('partner_id') : null;
-        
-        $metrics = $this->reportingService->getMetrics($partnerId);
-        
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $report = $this->reportingService->getFullReport($partnerId, $startDate, $endDate);
+
         return response()->json([
-            'data' => $metrics,
+            'data' => $report,
+        ]);
+    }
+
+    public function export(Request $request): Response
+    {
+        $partnerId = $request->query('partner_id') ? (int) $request->query('partner_id') : null;
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $csv = $this->reportingService->exportCsv($partnerId, $startDate, $endDate);
+        $filename = 'laporan-pendapatan-' . now()->format('Y-m-d') . '.csv';
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
 }

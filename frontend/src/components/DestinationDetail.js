@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { TravelGallery } from "./TravelGallery";
 import { PlaceLocation } from "./PlaceLocation";
+import { WishlistButton } from "./WishlistButton";
+import { ReviewSection } from "./ReviewSection";
 import { Shell } from "./Shell";
 
 export function DestinationDetail({ destination, demo = false }) {
@@ -27,9 +29,17 @@ export function DestinationDetail({ destination, demo = false }) {
               {destination.region?.name || "Wilayah wisata"}
             </p>
           </div>
-          <Link href="/destinasi" className="ui-button ui-button-outline">
-            <ArrowLeft size={16} /> Kembali ke destinasi
-          </Link>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            {!demo && destination.slug && (
+              <WishlistButton
+                destinationSlug={destination.slug}
+                destinationName={destination.name}
+              />
+            )}
+            <Link href="/destinasi" className="ui-button ui-button-outline">
+              <ArrowLeft size={16} /> Kembali ke destinasi
+            </Link>
+          </div>
         </div>
         <TravelGallery photos={destination.photos} name={destination.name} />
         <div className="detail-content-grid">
@@ -37,6 +47,7 @@ export function DestinationDetail({ destination, demo = false }) {
             <nav className="detail-anchor-nav" aria-label="Informasi destinasi">
               <a href="#tentang-destinasi">Tentang destinasi</a>
               <a href="#lokasi-destinasi">Lokasi & akses</a>
+              <a href="#ulasan-destinasi">Ulasan pengunjung</a>
             </nav>
             <div id="tentang-destinasi">
               <p className="section-kicker">KENALI TUJUAN ANDA</p>
@@ -57,6 +68,9 @@ export function DestinationDetail({ destination, demo = false }) {
                   location_is_demo: demo || destination.location_is_demo,
                 }}
               />
+            </div>
+            <div id="ulasan-destinasi">
+              <ReviewSection destinationSlug={destination.slug} />
             </div>
           </section>
           <aside className="detail-plan">

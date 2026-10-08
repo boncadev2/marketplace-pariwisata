@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Http;
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
+config([
+    'database.default' => 'mysql',
+    'database.connections.mysql.database' => 'wisata_concurrency_test',
+]);
+if (getenv('DB_HOST') || (isset($_SERVER['DB_HOST']) && ! empty($_SERVER['DB_HOST']))) {
+    config(['database.connections.mysql.host' => getenv('DB_HOST') ?: $_SERVER['DB_HOST']]);
+}
 if (DB::connection()->getDriverName() !== 'mysql' || DB::connection()->getDatabaseName() !== 'wisata_concurrency_test') {
     exit(2);
 }

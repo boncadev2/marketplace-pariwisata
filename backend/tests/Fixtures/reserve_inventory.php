@@ -22,6 +22,16 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
+config([
+    'database.default' => 'mysql',
+    'database.connections.mysql.database' => 'wisata_concurrency_test',
+]);
+if (getenv('DB_HOST') || (isset($_SERVER['DB_HOST']) && ! empty($_SERVER['DB_HOST']))) {
+    config(['database.connections.mysql.host' => getenv('DB_HOST') ?: $_SERVER['DB_HOST']]);
+}
+if (getenv('APP_KEY') || (isset($_SERVER['APP_KEY']) && ! empty($_SERVER['APP_KEY']))) {
+    config(['app.key' => getenv('APP_KEY') ?: $_SERVER['APP_KEY']]);
+}
 $start = (float) $argv[2];
 while (microtime(true) < $start) {
     usleep(1000);

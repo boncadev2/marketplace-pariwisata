@@ -9,6 +9,7 @@ use App\Payments\PaymentGatewayManager;
 use App\Services\Refund\MidtransRefundAdapter;
 use App\Services\Refund\RefundAdapterInterface;
 use App\Services\Refund\SandboxRefundAdapter;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -35,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = rtrim((string) config('services.frontend_url', env('FRONTEND_URL', 'http://localhost:8080')), '/');
+            return "{$frontendUrl}/reset-password?token={$token}&email=".urlencode($notifiable->getEmailForPasswordReset());
+        });
+
         RateLimiter::for('login', fn (Request $request): Limit => Limit::perMinute(6)
             ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
         RateLimiter::for('sensitive-confirmation', fn (Request $request): Limit => Limit::perMinute(5)

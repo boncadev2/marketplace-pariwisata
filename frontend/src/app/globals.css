@@ -67,3 +67,54 @@ body {
 .travel-gallery-management { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
 .travel-gallery-management article { border: 1px solid #dde5f0; border-radius: 16px; padding: 16px; }
 @media (max-width: 700px) { .travel-gallery-grid, .travel-gallery-management { grid-template-columns: repeat(2, minmax(0, 1fr)); } .travel-gallery-grid img { height: 180px; } }
+
+/* Mobile PWA & Promo Responsive Styles */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .promo-cards-scroll {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 1rem !important;
+    padding-bottom: 0.75rem;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .promo-cards-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .promo-cards-scroll article {
+    min-width: 82vw;
+    scroll-snap-align: center;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .ui-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .search-categories {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+  }
+  .search-categories::-webkit-scrollbar {
+    display: none;
+  }
+}

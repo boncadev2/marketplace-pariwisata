@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="mountain1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <linearGradient id="mountain2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle Inner Border -->
+  <rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25"/>
+
+  <!-- Golden Sun -->
+  <circle cx="256" cy="190" r="76" fill="url(#sunGrad)" filter="url(#shadow)"/>
+
+  <!-- Left / Back Mountain -->
+  <polygon points="120,380 220,230 310,380" fill="url(#mountain2)" opacity="0.85"/>
+  <polygon points="220,230 250,280 200,280" fill="#ffffff" opacity="0.7"/>
+
+  <!-- Right / Front Mountain -->
+  <polygon points="210,380 340,180 440,380" fill="url(#mountain1)" filter="url(#shadow)"/>
+  <!-- Snow Cap on Front Mountain -->
+  <polygon points="340,180 375,245 345,235 320,250 310,235" fill="#38bdf8" opacity="0.4"/>
+
+  <!-- Water Wave / Green Valley at Base -->
+  <path d="M 80,380 Q 160,340 256,380 T 432,380 L 432,410 Q 340,430 256,410 T 80,410 Z" fill="url(#waveGrad)" opacity="0.95"/>
+
+  <!-- Compass Star / Pin Accent -->
+  <g transform="translate(256, 105)" filter="url(#shadow)">
+    <path d="M 0,-30 L 7,-8 L 28,0 L 7,8 L 0,30 L -7,8 L -28,0 L -7,-8 Z" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="4" fill="#f59e0b"/>
+  </g>
+</svg>

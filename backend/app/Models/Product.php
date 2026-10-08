@@ -44,4 +44,9 @@ class Product extends Model
     {
         return $this->hasOne(TourPackage::class);
     }
+
+    public function destination(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Destination::class);
+    }
 }

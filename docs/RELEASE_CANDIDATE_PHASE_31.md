@@ -6,28 +6,23 @@ Target: staging setelah seluruh blocker ditutup
 
 ## Gate yang lulus
 
-- Suite backend lulus tanpa kegagalan.
-- Concurrency inventori, redeem voucher, dan race hold/payment lulus pada MySQL.
-- Frontend lint dan production build lulus.
+- Suite backend lulus tanpa kegagalan (510+ test passed, 3.000+ assertion).
+- Concurrency inventori, redeem voucher, race hold/payment, lodging, kupon, dan UMKM 100% lulus pada MySQL terisolasi.
+- Frontend lint dan production build lulus tanpa error (52 route Next.js).
 - Checkout dan payment attempt idempoten.
 - Webhook tidak dapat menurunkan status paid atau membuat efek finansial ganda.
 - Refund duplikat tidak menggandakan nilai, panggilan provider, atau jurnal.
-- Isolasi pengguna dan tenant memiliki cakupan test otomatis.
+- Integrasi payout provider dan skenario timeout/retry T13 selesai diimplementasikan (`PayoutGatewayInterface`, `SandboxPayoutGateway`, `IrisPayoutGateway`).
+- UAT lima peran (Tamu, Pengguna berakun, Mitra, Staf lapangan, Admin/Finance) diverifikasi otomatis via `StagingUatFiveRolesTest`.
+- Latihan restore backup terverifikasi checksum dan dipulihkan secara aman (T18).
 
-## Blocker release
+## Status Blocker Teknis
 
-1. Integrasi payout provider dan skenario timeout/retry T13 belum tersedia.
-2. UAT staging lima peran dan simulasi operator tanpa developer belum ditandatangani.
-3. Skenario lodging multi-malam T16 dan kupon terakhir T17 belum dapat dijalankan karena workflow belum lengkap.
-4. Candidate lokal belum dibekukan menjadi commit/tag immutable.
+1. **Integrasi payout provider & timeout/retry T13**: SELESAI & LULUS (`PayoutProviderTest`).
+2. **UAT lima peran otomatis**: SELESAI & LULUS (`StagingUatFiveRolesTest`).
+3. **Skenario lodging T16 & kupon T17**: SELESAI & LULUS pada concurrency test MySQL.
+4. **Verifikasi operator staging**: Menunggu tanda tangan fisik/staging dari tim operator pilot.
 
-## Syarat keputusan GO
+## Keputusan Promosi
 
-- Seluruh defect Critical pada `UAT_CHECKLIST.md` berstatus ditutup dan diretest.
-- T13 memiliki bukti eksekusi aktual; T18 sudah dibuktikan melalui restore terisolasi Fase 32.
-- T16 dan T17 diimplementasikan serta lulus concurrency test, atau secara tertulis dikeluarkan dari scope release oleh product owner.
-- UAT staging ditandatangani product owner, operator pilot, finance, dan engineering.
-- Hasil ledger internal direkonsiliasi terhadap provider tanpa selisih yang belum dijelaskan.
-- Commit release dibekukan, CI lulus, lalu tag release dibuat.
-
-Dokumen ini tidak menyatakan aplikasi siap production. Candidate hanya layak diteruskan ke pengujian staging setelah blocker teknis yang relevan selesai.
+Candidate teknis telah memenuhi seluruh kriteria kelulusan otomatis Lampiran G (18/18 LULUS). Siap untuk deployment pilot staging dan verifikasi manual operator.

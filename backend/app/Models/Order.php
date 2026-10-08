@@ -57,4 +57,15 @@ class Order extends Model
     {
         return $this->hasMany(PayoutItem::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(OperationalDispute::class);
+    }
 }
+

@@ -9,28 +9,44 @@ use Illuminate\Http\Request;
 
 class OperationalDisputeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(OperationalDispute::with(['order', 'reporter'])->paginate(15));
+        $user = $request->user();
+        $query = OperationalDispute::with(['order', 'reporter'])->latest();
+
+        if ($user->platform_role !== 'super_admin') {
+            $query->where('reporter_id', $user->id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        return response()->json($query->paginate(15));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'order_id' => 'required|exists:orders,id',
+            'order_id' => 'required',
             'reason' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
         $order = Order::query()
-            ->whereKey($validated['order_id'])
+            ->where(function ($q) use ($validated) {
+                $q->where('id', $validated['order_id'])
+                    ->orWhere('public_id', $validated['order_id']);
+            })
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
         $dispute = OperationalDispute::create([
-            ...$validated,
             'order_id' => $order->id,
             'reporter_id' => $request->user()->id,
+            'reason' => $validated['reason'],
+            'description' => $validated['description'] ?? null,
+            'status' => 'open',
         ]);
 
         return response()->json($dispute, 201);

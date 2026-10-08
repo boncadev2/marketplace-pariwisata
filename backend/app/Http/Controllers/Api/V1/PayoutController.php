@@ -8,6 +8,8 @@ use App\Models\Order;
 use App\Models\PartnerBankAccount;
 use App\Models\PayoutBatch;
 use App\Models\PayoutItem;
+use App\Payouts\PayoutGatewayManager;
+use App\Services\PayoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,21 @@ use Illuminate\Validation\Rule;
 
 class PayoutController extends Controller
 {
+    public function __construct(
+        private PayoutService $payoutService,
+        private PayoutGatewayManager $gatewayManager,
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $batches = PayoutBatch::query()
+            ->with(['maker:id,name', 'checker:id,name', 'items.partner:id,name'])
+            ->latest('id')
+            ->paginate(15);
+
+        return response()->json($batches);
+    }
+
     public function eligible(Request $request): JsonResponse
     {
         $orders = Order::where('payout_status', 'eligible')
@@ -135,18 +152,45 @@ class PayoutController extends Controller
 
     public function processBatch(Request $request, PayoutBatch $batch): JsonResponse
     {
+        if (! $this->gatewayManager->isConfigured()) {
+            return response()->json([
+                'message' => 'Provider payout belum dikonfigurasi; tidak ada status keuangan yang diubah.',
+                'code' => 'PAYOUT_PROVIDER_NOT_CONFIGURED',
+            ], 503);
+        }
+
+        $result = $this->payoutService->process($batch, $request->user());
+
         return response()->json([
-            'message' => 'Provider payout belum dikonfigurasi; tidak ada status keuangan yang diubah.',
-            'code' => 'PAYOUT_PROVIDER_NOT_CONFIGURED',
-        ], 503);
+            'message' => $result['message'] ?? 'Batch payout berhasil diproses.',
+            'status' => $result['status'],
+            'data' => $result['batch'],
+        ]);
     }
 
     public function completeBatch(Request $request, PayoutBatch $batch): JsonResponse
     {
+        $proofReference = $request->input('proof_reference') ?? $request->input('reference');
+
+        if (empty($proofReference)) {
+            return response()->json([
+                'message' => 'Status paid hanya boleh berasal dari bukti provider payout yang terverifikasi.',
+                'code' => 'PAYOUT_PROVIDER_PROOF_REQUIRED',
+            ], 503);
+        }
+
+        $validated = $request->validate([
+            'proof_reference' => ['nullable', 'string', 'min:3'],
+            'reference' => ['nullable', 'string', 'min:3'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $batch = $this->payoutService->complete($batch, $validated, $request->user());
+
         return response()->json([
-            'message' => 'Status paid hanya boleh berasal dari bukti provider payout yang terverifikasi.',
-            'code' => 'PAYOUT_PROVIDER_PROOF_REQUIRED',
-        ], 503);
+            'message' => 'Batch payout berhasil diselesaikan dengan bukti terverifikasi.',
+            'data' => $batch,
+        ]);
     }
 
     private function audit(Request $request, PayoutBatch $batch, string $action): void

@@ -62,6 +62,7 @@ Artisan::command('reconciliation:daily-report {date?}', function (?string $date 
 Schedule::command('reconciliation:dispatch')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 Schedule::command('reconciliation:daily-report')->dailyAt('01:30')->withoutOverlapping(60)->onOneServer();
 Schedule::job(new DataRetentionJob)->dailyAt('02:00')->withoutOverlapping(60)->onOneServer();
+Schedule::command('app:backup-database --compress')->dailyAt('02:30')->withoutOverlapping(60)->onOneServer();
 Schedule::call(fn () => cache()->put('health:scheduler:last_seen', now()->timestamp, now()->addMinutes(10)))
     ->name('health:scheduler-heartbeat')
     ->everyMinute()

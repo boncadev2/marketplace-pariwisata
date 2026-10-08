@@ -14,6 +14,7 @@ import { TravelGallery } from "./TravelGallery";
 import { Shell } from "./Shell";
 import { PageHeader } from "./PageHeader";
 import { PackageAvailability } from "./PackageAvailability";
+import { ReviewSection } from "./ReviewSection";
 import { apiRequest } from "../lib/api";
 const money = (value) =>
   new Intl.NumberFormat("id-ID", {
@@ -168,6 +169,7 @@ export function TourPackageDetail({ slug }) {
                   </div>
                 </div>
               </section>
+              <ReviewSection productSlug={item.slug} />
             </div>
             <aside className="travel-booking-card">
               <span>Harga dasar paket</span>

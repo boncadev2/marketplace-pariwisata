@@ -4,7 +4,11 @@ use App\Http\Controllers\Api\AccountDataDeletionController;
 use App\Http\Controllers\Api\AccountOrderController;
 use App\Http\Controllers\Api\AccountSupportTicketController;
 use App\Http\Controllers\Api\AccountWishlistController;
+use App\Http\Controllers\Api\AdminArticleController;
+use App\Http\Controllers\Api\AdminCouponController;
+use App\Http\Controllers\Api\AdminSupportTicketController;
 use App\Http\Controllers\Api\AppSettingController;
+use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryRegionController;
 use App\Http\Controllers\Api\CheckoutController;
@@ -57,6 +61,7 @@ use App\Http\Controllers\Api\V1\RefundRequestController;
 use App\Http\Controllers\Api\V1\RevenueReportingController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\VoucherRedemptionController;
+use App\Http\Controllers\Api\WhatsAppNotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -65,6 +70,8 @@ Route::prefix('v1')->group(function (): void {
     Route::patch('/pilot/checkout-status', [PilotCheckoutControlController::class, 'update'])
         ->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
     Route::get('/guest/orders/{publicId}/vouchers', [GuestVoucherController::class, 'show'])->middleware('throttle:10,1');
+    Route::post('/guest/orders/{publicId}/whatsapp', [WhatsAppNotificationController::class, 'sendGuestVoucher'])->middleware('throttle:10,1');
+    Route::post('/staff/vouchers/check', [VoucherRedemptionController::class, 'check'])->middleware(['auth:sanctum', 'throttle:60,1']);
     Route::post('/staff/vouchers/redeem', [VoucherRedemptionController::class, 'store'])->middleware(['auth:sanctum', 'throttle:30,1']);
     Route::get('/dashboard/production-readiness', ProductionReadinessController::class)->middleware(['auth:sanctum', 'admin.platform', 'throttle:20,1']);
     Route::get('/payments/gateway-status', PaymentGatewayStatusController::class)->middleware('throttle:30,1');
@@ -88,6 +95,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/account/orders', [AccountOrderController::class, 'index'])->middleware('auth:sanctum');
     Route::get('/account/orders/{publicId}', [AccountOrderController::class, 'show'])->middleware('auth:sanctum');
     Route::get('/account/orders/{publicId}/vouchers', [AccountOrderController::class, 'vouchers'])->middleware('auth:sanctum');
+    Route::post('/account/orders/{publicId}/participants', [AccountOrderController::class, 'updateParticipants'])->middleware('auth:sanctum');
+    Route::post('/account/orders/{publicId}/whatsapp', [WhatsAppNotificationController::class, 'sendOrderVoucher'])->middleware(['auth:sanctum', 'throttle:10,1']);
     Route::post('/account/orders/claim', [AccountOrderController::class, 'claim'])->middleware(['auth:sanctum', 'throttle:6,1']);
     Route::get('/account/support-tickets', [AccountSupportTicketController::class, 'index'])->middleware('auth:sanctum');
     Route::get('/account/support-tickets/{ticketId}', [AccountSupportTicketController::class, 'show'])->middleware('auth:sanctum');
@@ -151,6 +160,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/destinations', [DestinationController::class, 'index']);
     Route::get('/destinations/{destination:slug}', [DestinationController::class, 'show']);
     Route::get('/destinations/{destination:slug}/packages', [DestinationController::class, 'packages']);
+    Route::get('/articles', [ArticleController::class, 'index']);
+    Route::get('/articles/{slug}', [ArticleController::class, 'show']);
     Route::get('/dashboard/umkm-products/{slug}/photo', [UmkmProductManagementController::class, 'photo'])->middleware(['auth:sanctum', 'throttle:60,1']);
     Route::get('/umkm-products/{slug}/photo', [UmkmProductController::class, 'photo'])->middleware('throttle:60,1');
     Route::get('/dashboard/umkm-products', [UmkmProductManagementController::class, 'index'])->middleware(['auth:sanctum', 'throttle:60,1']);
@@ -205,9 +216,11 @@ Route::prefix('v1')->group(function (): void {
 
     // Phase 25: Laporan Keuangan
     Route::get('/revenue-reports', [RevenueReportingController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/revenue-reports/export', [RevenueReportingController::class, 'export'])->middleware(['auth:sanctum', 'admin.platform']);
 
     // Phase 26: Payout and Settlement
     Route::get('/payouts/eligible', [PayoutController::class, 'eligible'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/payouts/batches', [PayoutController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
     Route::post('/payouts/batches', [PayoutController::class, 'storeBatch'])->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
     Route::post('/payouts/batches/{batch}/approve', [PayoutController::class, 'approveBatch'])->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
     Route::post('/payouts/batches/{batch}/process', [PayoutController::class, 'processBatch'])->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
@@ -216,11 +229,36 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/partner-bank-accounts', [PartnerBankAccountController::class, 'store'])->middleware(['auth:sanctum', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
     Route::post('/partner-bank-accounts/{account}/verify', [PartnerBankAccountController::class, 'verify'])->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed', 'throttle:sensitive-confirmation']);
     // Operational disputes and reviews
-    Route::get('/disputes', [OperationalDisputeController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/disputes', [OperationalDisputeController::class, 'index'])->middleware('auth:sanctum');
     Route::post('/disputes', [OperationalDisputeController::class, 'store'])->middleware('auth:sanctum');
     Route::patch('/disputes/{operationalDispute}', [OperationalDisputeController::class, 'update'])->middleware(['auth:sanctum', 'admin.platform', 'sensitive.confirmed']);
     Route::apiResource('reviews', ReviewController::class)->only(['store'])->middleware('auth:sanctum');
     Route::apiResource('reviews', ReviewController::class)->only(['index', 'show']);
+    Route::get('/dashboard/reviews', [ReviewController::class, 'adminIndex'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::patch('/dashboard/reviews/{review}', [ReviewController::class, 'moderate'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::delete('/dashboard/reviews/{review}', [ReviewController::class, 'destroy'])->middleware(['auth:sanctum', 'admin.platform']);
+
+    // Admin support ticket management
+    Route::get('/dashboard/support-tickets', [AdminSupportTicketController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/dashboard/support-tickets/{ticket}', [AdminSupportTicketController::class, 'show'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::post('/dashboard/support-tickets/{ticket}/reply', [AdminSupportTicketController::class, 'reply'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::patch('/dashboard/support-tickets/{ticket}/status', [AdminSupportTicketController::class, 'updateStatus'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/dashboard/support-tickets/{ticket}/attachments/{attachment}', [AdminSupportTicketController::class, 'download'])->middleware(['auth:sanctum', 'admin.platform']);
+
+    // Admin coupon and promo voucher management
+    Route::get('/dashboard/coupons', [AdminCouponController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::post('/dashboard/coupons', [AdminCouponController::class, 'store'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/dashboard/coupons/{coupon}', [AdminCouponController::class, 'show'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::put('/dashboard/coupons/{coupon}', [AdminCouponController::class, 'update'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::patch('/dashboard/coupons/{coupon}/toggle', [AdminCouponController::class, 'toggle'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::delete('/dashboard/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->middleware(['auth:sanctum', 'admin.platform']);
+
+    // Admin article management
+    Route::get('/dashboard/articles', [AdminArticleController::class, 'index'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::post('/dashboard/articles', [AdminArticleController::class, 'store'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::get('/dashboard/articles/{article}', [AdminArticleController::class, 'show'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::put('/dashboard/articles/{article}', [AdminArticleController::class, 'update'])->middleware(['auth:sanctum', 'admin.platform']);
+    Route::delete('/dashboard/articles/{article}', [AdminArticleController::class, 'destroy'])->middleware(['auth:sanctum', 'admin.platform']);
 
     // Phase 27: Dashboard operasional admin dan mitra
     Route::prefix('dashboard')->middleware(['auth:sanctum', 'throttle:60,1'])->group(function (): void {

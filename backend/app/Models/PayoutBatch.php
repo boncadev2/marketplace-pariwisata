@@ -13,6 +13,15 @@ class PayoutBatch extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'provider_payload' => 'array',
+            'processed_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
+
     public function maker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'maker_id');

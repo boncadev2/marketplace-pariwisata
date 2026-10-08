@@ -423,6 +423,9 @@ class OperationalDashboardService
             'payout_status' => $order->payout_status,
             'currency' => $order->currency,
             'total' => (int) $order->total,
+            'customer_name' => $order->customer_name,
+            'customer_email' => $order->customer_email,
+            'participants' => $order->policy_snapshot['participants'] ?? [],
             'created_at' => $order->created_at?->setTimezone($timezone)->toIso8601String(),
             'items' => $order->relationLoaded('items') ? $order->items->map(fn ($item): array => [
                 'name' => $item->name,

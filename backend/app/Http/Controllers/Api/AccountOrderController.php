@@ -24,7 +24,7 @@ class AccountOrderController extends Controller
         $orders = Order::query()
             ->where('user_id', $request->user()->id)
             ->when(isset($data['status']), fn ($query) => $query->where('status', $data['status']))
-            ->with('items:id,order_id,name,quantity')
+            ->with(['items:id,order_id,product_id,name,quantity', 'reviews:id,order_id,rating', 'disputes:id,order_id,reason,description,status,resolution'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -36,7 +36,7 @@ class AccountOrderController extends Controller
 
     public function show(Request $request, string $publicId): JsonResponse
     {
-        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with(['items:id,order_id,name,quantity,snapshot', 'partner:id,name,contact_email,contact_phone'])->firstOrFail();
+        $order = Order::query()->where('user_id', $request->user()->id)->where('public_id', $publicId)->with(['items:id,order_id,name,quantity,snapshot', 'partner:id,name,contact_email,contact_phone', 'disputes'])->firstOrFail();
         $attempt = PaymentAttempt::query()->where('order_id', $order->id)->orderByDesc('id')->first();
 
         return response()->json(['data' => [
@@ -62,6 +62,35 @@ class AccountOrderController extends Controller
             : [];
 
         return response()->json(['data' => ['order_id' => $order->public_id, 'status' => $order->status, 'vouchers' => $vouchers]])->header('Cache-Control', 'private, no-store');
+    }
+
+    public function updateParticipants(Request $request, string $publicId): JsonResponse
+    {
+        $order = Order::query()
+            ->where('user_id', $request->user()->id)
+            ->where('public_id', $publicId)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'participants' => 'required|array',
+            'participants.*.name' => 'required|string|max:120',
+            'participants.*.id_number' => 'nullable|string|max:50',
+            'participants.*.phone' => 'nullable|string|max:30',
+            'participants.*.emergency_contact' => 'nullable|string|max:120',
+            'participants.*.notes' => 'nullable|string|max:255',
+        ]);
+
+        $snapshot = $order->policy_snapshot ?? [];
+        $snapshot['participants'] = $validated['participants'];
+        $order->update(['policy_snapshot' => $snapshot]);
+
+        return response()->json([
+            'message' => 'Manifest peserta berhasil disimpan.',
+            'data' => [
+                'order_id' => $order->public_id,
+                'participants' => $snapshot['participants'],
+            ],
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     public function claim(Request $request): JsonResponse
@@ -112,12 +141,28 @@ class AccountOrderController extends Controller
     private function summary(Order $order): array
     {
         return [
+            'id' => $order->id,
             'order_id' => $order->public_id,
             'status' => $order->status,
             'currency' => $order->currency,
             'total' => $order->total,
+            'customer_name' => $order->customer_name,
             'visit_date' => $order->policy_snapshot['visit_date'] ?? null,
-            'items' => $order->items->map(fn ($item) => ['name' => $item->name, 'quantity' => $item->quantity])->all(),
+            'participants' => $order->policy_snapshot['participants'] ?? [],
+            'items' => $order->items->map(fn ($item) => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'name' => $item->name,
+                'quantity' => $item->quantity,
+            ])->all(),
+            'has_review' => $order->relationLoaded('reviews') ? $order->reviews->isNotEmpty() : $order->reviews()->exists(),
+            'disputes' => $order->relationLoaded('disputes') ? $order->disputes->map(fn ($d) => [
+                'id' => $d->id,
+                'reason' => $d->reason,
+                'description' => $d->description,
+                'status' => $d->status,
+                'resolution' => $d->resolution,
+            ])->all() : [],
             'created_at' => $order->created_at->toIso8601String(),
         ];
     }

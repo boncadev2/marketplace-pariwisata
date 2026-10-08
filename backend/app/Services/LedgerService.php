@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\JournalEntry;
 use App\Models\LedgerAccount;
 use App\Models\Order;
+use App\Models\PayoutBatch;
 use App\Models\RefundRequest;
 use Illuminate\Support\Facades\DB;
 
@@ -146,6 +147,65 @@ class LedgerService
                     'ledger_account_id' => $commissionAccount->id,
                     'type' => 'debit',
                     'amount' => $commissionAmount,
+                ]);
+            }
+
+            return $entry;
+        });
+    }
+
+    public function recordPayout(PayoutBatch $batch): JournalEntry
+    {
+        return DB::transaction(function () use ($batch): JournalEntry {
+            $batch = PayoutBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            $existing = JournalEntry::query()
+                ->where('reference_type', PayoutBatch::class)
+                ->where('reference_id', $batch->id)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+
+            $entry = JournalEntry::create([
+                'order_id' => null,
+                'reference_type' => PayoutBatch::class,
+                'reference_id' => $batch->id,
+                'description' => 'Payout disbursement for batch '.$batch->batch_number,
+            ]);
+
+            $gatewayAccount = LedgerAccount::firstOrCreate(
+                ['code' => 'asset_payment_gateway'],
+                ['name' => 'Payment Gateway', 'type' => 'asset']
+            );
+
+            $items = $batch->items()->get();
+            $groupedByPartner = $items->groupBy('partner_id');
+
+            $totalDebited = 0;
+            foreach ($groupedByPartner as $partnerId => $partnerItems) {
+                $partnerAmount = (int) $partnerItems->sum('amount');
+                if ($partnerAmount > 0) {
+                    $partnerAccount = LedgerAccount::firstOrCreate(
+                        ['code' => 'liability_partner_'.$partnerId],
+                        ['name' => 'Partner Liability '.$partnerId, 'type' => 'liability', 'partner_id' => $partnerId]
+                    );
+
+                    $entry->transactions()->create([
+                        'ledger_account_id' => $partnerAccount->id,
+                        'type' => 'debit',
+                        'amount' => $partnerAmount,
+                    ]);
+
+                    $totalDebited += $partnerAmount;
+                }
+            }
+
+            if ($totalDebited > 0) {
+                $entry->transactions()->create([
+                    'ledger_account_id' => $gatewayAccount->id,
+                    'type' => 'credit',
+                    'amount' => $totalDebited,
                 ]);
             }
 

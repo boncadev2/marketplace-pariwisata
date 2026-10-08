@@ -24,4 +24,9 @@ class SupportTicketMessage extends Model
     {
         return $this->hasMany(SupportTicketAttachment::class);
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

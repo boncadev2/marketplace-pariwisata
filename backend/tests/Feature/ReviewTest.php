@@ -56,4 +56,28 @@ class ReviewTest extends TestCase
             'rating' => 5,
         ]);
     }
+
+    public function test_admin_can_moderate_and_delete_review(): void
+    {
+        $admin = User::factory()->create(['platform_role' => 'super_admin']);
+        $review = Review::factory()->create(['status' => 'pending']);
+
+        // Admin lists reviews
+        $listResponse = $this->actingAs($admin)->getJson('/api/v1/dashboard/reviews');
+        $listResponse->assertStatus(200);
+
+        // Admin moderates (rejects)
+        $modResponse = $this->actingAs($admin)->patchJson("/api/v1/dashboard/reviews/{$review->id}", [
+            'status' => 'rejected',
+            'moderation_reason' => 'Mengandung kata tidak pantas',
+        ]);
+        $modResponse->assertStatus(200);
+        $this->assertSame('rejected', $review->fresh()->status);
+
+        // Admin deletes
+        $delResponse = $this->actingAs($admin)->deleteJson("/api/v1/dashboard/reviews/{$review->id}");
+        $delResponse->assertStatus(204);
+        $this->assertDatabaseMissing('reviews', ['id' => $review->id]);
+    }
 }
+

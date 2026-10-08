@@ -36,7 +36,22 @@ class CheckoutController extends Controller
             app(MidtransSandboxGateway::class)->assertConfigured();
         }
 
-        $data = $request->validate(['product_slug' => ['required', 'string'], 'visit_date' => ['required', 'date_format:Y-m-d'], 'quantity' => ['required', 'integer', 'min:1', 'max:100'], 'customer_name' => ['required', 'string', 'max:120'], 'customer_email' => ['required', 'email:rfc', 'max:255'], 'coupon_code' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/'], 'expected_total' => ['required_with:coupon_code,cross_village_version', 'nullable', 'integer', 'min:1'], 'cross_village_version' => ['nullable', 'string', 'size:64']]);
+        $data = $request->validate([
+            'product_slug' => ['required', 'string'],
+            'visit_date' => ['required', 'date_format:Y-m-d'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            'customer_name' => ['required', 'string', 'max:120'],
+            'customer_email' => ['required', 'email:rfc', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'coupon_code' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'expected_total' => ['required_with:coupon_code,cross_village_version', 'nullable', 'integer', 'min:1'],
+            'cross_village_version' => ['nullable', 'string', 'size:64'],
+            'participants' => ['nullable', 'array', 'max:100'],
+            'participants.*.name' => ['required_with:participants', 'string', 'max:120'],
+            'participants.*.id_number' => ['nullable', 'string', 'max:50'],
+            'participants.*.phone' => ['nullable', 'string', 'max:30'],
+            'participants.*.notes' => ['nullable', 'string', 'max:255'],
+        ]);
         $couponCode = isset($data['coupon_code']) ? strtoupper(trim($data['coupon_code'])) : null;
         $user = $request->user('sanctum');
         if ($couponCode !== null) {
@@ -49,7 +64,7 @@ class CheckoutController extends Controller
         abort_unless(is_string($key) && strlen($key) >= 16, 422, 'Idempotency-Key wajib diisi.');
         $product = Product::query()->where('slug', $data['product_slug'])->where('status', 'published')->firstOrFail();
         try {
-            [$order, $guestToken] = $checkoutService->create($product, CarbonImmutable::parse($data['visit_date']), $data['quantity'], $data['customer_name'], $data['customer_email'], $key, $couponCode, $user, isset($data['expected_total']) ? (int) $data['expected_total'] : null, $data['cross_village_version'] ?? null);
+            [$order, $guestToken] = $checkoutService->create($product, CarbonImmutable::parse($data['visit_date']), $data['quantity'], $data['customer_name'], $data['customer_email'], $key, $couponCode, $user, isset($data['expected_total']) ? (int) $data['expected_total'] : null, $data['cross_village_version'] ?? null, $data['participants'] ?? null, $data['customer_phone'] ?? null);
         } catch (IdempotencyConflictException $exception) {
             return response()->json(['error' => ['code' => 'IDEMPOTENCY_CONFLICT', 'message' => $exception->getMessage()]], 409)
                 ->header('Cache-Control', 'no-store');
