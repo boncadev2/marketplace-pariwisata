@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import { DestinationDetail } from "../../../components/DestinationDetail";
 import { EmptyState } from "../../../components/PageHeader";
 import { Shell } from "../../../components/Shell";
+import { getBackendUrl } from "../../../lib/api";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const response = await fetch(
       `${backend}/api/v1/destinations/${encodeURIComponent(slug)}`,
       {
@@ -48,7 +49,7 @@ export default async function Page({ params }) {
   const { slug } = await params;
   let response;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     response = await fetch(
       `${backend}/api/v1/destinations/${encodeURIComponent(slug)}`,
       {

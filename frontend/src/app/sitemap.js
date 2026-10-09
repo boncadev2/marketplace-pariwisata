@@ -1,6 +1,8 @@
+import { getBackendUrl } from "../lib/api";
+
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://wisatadaerah.id";
-  const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+  const backend = getBackendUrl();
 
   const staticRoutes = [
     {

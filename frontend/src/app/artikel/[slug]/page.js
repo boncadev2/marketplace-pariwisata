@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Shell } from "../../../components/Shell";
+import { getBackendUrl } from "../../../lib/api";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -31,7 +32,7 @@ function formatDate(dateStr) {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const response = await fetch(
       `${backend}/api/v1/articles/${encodeURIComponent(slug)}`,
       {
@@ -170,7 +171,7 @@ export default async function ArticleDetailPage({ params }) {
   let related = [];
 
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const res = await fetch(
       `${backend}/api/v1/articles/${encodeURIComponent(slug)}`,
       {

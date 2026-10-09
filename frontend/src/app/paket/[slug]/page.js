@@ -1,9 +1,10 @@
 import { TourPackageDetail } from "../../../components/TourPackageDetail";
+import { getBackendUrl } from "../../../lib/api";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const res = await fetch(
       `${backend}/api/v1/tour-packages/${encodeURIComponent(slug)}`,
       {
@@ -46,7 +47,7 @@ export default async function Page({ params }) {
 
   let pkgData = null;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const res = await fetch(
       `${backend}/api/v1/tour-packages/${encodeURIComponent(slug)}`,
       {

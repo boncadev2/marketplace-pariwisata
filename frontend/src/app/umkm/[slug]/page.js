@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import { ShoppingBag, MapPin, Store, ArrowUpRight } from "lucide-react";
 import { Shell } from "../../../components/Shell";
 import { PageHeader, EmptyState } from "../../../components/PageHeader";
+import { getBackendUrl } from "../../../lib/api";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const res = await fetch(
       `${backend}/api/v1/umkm-products/${encodeURIComponent(slug)}`,
       {
@@ -50,8 +51,9 @@ export default async function Page({ params }) {
   const { slug } = await params;
   let response;
   try {
+    const backend = getBackendUrl();
     response = await fetch(
-      `${process.env.BACKEND_INTERNAL_URL || "http://backend:8000"}/api/v1/umkm-products/${encodeURIComponent(slug)}`,
+      `${backend}/api/v1/umkm-products/${encodeURIComponent(slug)}`,
       {
         cache: "no-store",
         headers: { Accept: "application/json" },

@@ -6,12 +6,13 @@ import { EmptyState } from "../../../components/PageHeader";
 import { LodgingPhoto } from "../../../components/LodgingCard";
 import { PlaceLocation } from "../../../components/PlaceLocation";
 import { LodgingBookingForm } from "../../../components/LodgingBookingForm";
+import { getBackendUrl } from "../../../lib/api";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
   if (!/^[1-9][0-9]*$/.test(id)) return { title: "Penginapan" };
   try {
-    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
+    const backend = getBackendUrl();
     const res = await fetch(
       `${backend}/api/v1/lodging/rooms/${encodeURIComponent(id)}`,
       {
@@ -54,8 +55,9 @@ export default async function Page({ params }) {
   if (!/^[1-9][0-9]*$/.test(id)) notFound();
   let response;
   try {
+    const backend = getBackendUrl();
     response = await fetch(
-      `${process.env.BACKEND_INTERNAL_URL || "http://backend:8000"}/api/v1/lodging/rooms/${encodeURIComponent(id)}`,
+      `${backend}/api/v1/lodging/rooms/${encodeURIComponent(id)}`,
       {
         cache: "no-store",
         headers: { Accept: "application/json" },

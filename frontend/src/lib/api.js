@@ -2,6 +2,16 @@ const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || "/api/v1"
 ).replace(/\/+$/, "");
 
+export function getBackendUrl() {
+  if (process.env.BACKEND_INTERNAL_URL) {
+    return process.env.BACKEND_INTERNAL_URL.replace(/\/+$/, "");
+  }
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
+  }
+  return "http://backend:8000";
+}
+
 export async function apiRequest(path, options = {}) {
   const headers = { Accept: "application/json", ...options.headers };
 
