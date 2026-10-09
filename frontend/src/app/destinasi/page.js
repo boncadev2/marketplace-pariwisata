@@ -10,7 +10,14 @@ export default async function Page({ searchParams }) {
     <Shell>
       <PageHeader
         eyebrow="Jelajahi destinasi"
-        title="Temukan tempat. Ciptakan cerita."
+        title={
+          <>
+            <span>Temukan tempat.</span>{" "}
+            <span>
+              Ciptakan <span className="heading-accent">cerita.</span>
+            </span>
+          </>
+        }
         description="Dari alam yang menenangkan hingga desa yang penuh budaya. Pilih pengalaman yang paling cocok untuk perjalanan Anda."
         image="https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=900&q=85"
       />

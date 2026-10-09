@@ -1,12 +1,13 @@
 :root {
-  --brand: #0870ce;
-  --brand-dark: #075ba9;
-  --ink: #142b42;
-  --muted: #61758a;
-  --line: #e1e9f1;
-  --surface: #f5f8fc;
+  --brand: #0194f3;
+  --brand-dark: #007ce8;
+  --ink: #03121a;
+  --muted: #687176;
+  --line: #e5e9ed;
+  --surface: #f7f9fa;
   --radius: 20px;
-  --accent: #ef7f1a;
+  --accent: #ff5e1f;
+  --font-family-traveloka: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 .travel-app {
   min-height: 100vh;
@@ -14,16 +15,61 @@
   flex-direction: column;
   color: var(--ink);
   background: var(--surface);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-family-traveloka);
+  line-height: 1.57;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .travel-app * {
   box-sizing: border-box;
 }
-.travel-app h1,
-.travel-app h2,
+.travel-app h1 {
+  font-family: var(--font-family-traveloka);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+.travel-app h2 {
+  font-family: var(--font-family-traveloka);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 10px;
+}
 .travel-app h3 {
-  letter-spacing: -0.035em;
+  font-family: var(--font-family-traveloka);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.travel-app h4 {
+  font-family: var(--font-family-traveloka);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+.travel-app p {
+  font-family: var(--font-family-traveloka);
+  font-size: 14px;
+  line-height: 1.57;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 .travel-app button,
 .travel-app input,
@@ -425,17 +471,28 @@
   color: #b9e6ff;
 }
 .page-heading h1 {
-  font-size: clamp(28px, 3vw, 42px);
-  line-height: 1.18;
-  font-weight: 800;
-  margin: 12px 0 14px;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 10px 0 12px;
   max-width: 650px;
 }
+.page-heading h1 > span,
+.page-heading h1 span {
+  color: #ffc473;
+}
+.page-heading h1 .heading-accent,
+.page-heading h1 span.heading-accent,
+.page-heading h1 span > span {
+  color: var(--accent, #ef7f1a);
+}
 .page-heading p {
-  font-size: 14px;
+  font-size: 15px;
   color: #d7e9f6;
   max-width: 610px;
-  line-height: 1.8;
+  line-height: 1.6;
 }
 .page-heading-photo {
   width: 37%;
@@ -460,7 +517,10 @@
   padding: 30px 36px;
 }
 .page-heading-compact h1 {
-  font-size: 32px;
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
 }
 .travel-app .page-intro {
   padding: 36px 40px;
@@ -480,24 +540,29 @@
   margin-bottom: 8px;
 }
 .travel-app .page-intro > h1 {
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 16px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 12px;
 }
 .travel-app .page-intro > p {
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.6;
   max-width: 800px;
 }
 .travel-app .section {
   margin: 32px 0;
 }
 .travel-app .section > h2 {
-  font-size: 22px;
-  font-weight: 750;
-  margin: 0 0 18px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 16px;
 }
 .travel-app .card-grid {
   display: grid;
@@ -514,14 +579,17 @@
 }
 .travel-app .card h2,
 .travel-app .card h3 {
-  font-size: 17px;
-  font-weight: 750;
-  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
 }
 .travel-app .card p {
   font-size: 14px;
+  line-height: 1.57;
   color: var(--muted);
-  margin-block: 8px;
+  margin-block: 6px;
   overflow-wrap: anywhere;
 }
 .travel-app .card a {
@@ -732,15 +800,18 @@
 }
 .empty-state h1,
 .empty-state h2 {
-  font-size: 21px;
-  font-weight: 750;
-  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.33;
+  color: var(--ink);
+  margin-bottom: 8px;
 }
 .empty-state p {
   font-size: 14px;
+  line-height: 1.57;
   color: var(--muted);
   max-width: 480px;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
 }
 .site-footer {
   background: #fff;
@@ -950,16 +1021,19 @@
   }
   .page-heading h1,
   .page-heading-compact h1 {
-    font-size: 29px;
+    font-size: 24px;
+    line-height: 1.3;
   }
   .page-heading p {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.57;
   }
   .travel-app .page-intro {
     padding: 25px 22px;
   }
   .travel-app .page-intro > h1 {
-    font-size: 28px;
+    font-size: 24px;
+    line-height: 1.3;
   }
   .travel-app .search-panel {
     padding: 20px;
@@ -1081,18 +1155,19 @@
   box-shadow: 0 0 0 4px #ffb04f24;
 }
 .home-hero h1 {
-  font-size: 57px;
-  font-weight: 850;
-  line-height: 1.1;
-  letter-spacing: -2px;
-  margin: 18px 0;
+  color: #ffffff;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 16px 0;
 }
 .home-hero h1 > span {
   color: #ffc473;
 }
 .home-hero-copy p {
-  font-size: 14px;
-  line-height: 1.9;
+  font-size: 16px;
+  line-height: 1.6;
   color: #dcebf5;
 }
 
@@ -1418,14 +1493,17 @@
   margin-bottom: 10px;
 }
 .section-title h2 {
-  font-size: 29px;
-  font-weight: 800;
-  line-height: 1.25;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 .section-title p:not(.section-kicker) {
   color: var(--muted);
-  font-size: 13px;
-  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.57;
+  margin-top: 6px;
 }
 .section-title > a {
   display: flex;
@@ -1433,7 +1511,7 @@
   gap: 8px;
   color: var(--brand);
   font-weight: 750;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
   min-height: 44px;
 }
@@ -1462,16 +1540,17 @@
   box-shadow: 0 12px 30px #26456112;
 }
 .experience-card h3 {
-  font-weight: 800;
-  font-size: 24px;
-  line-height: 1.3;
-  margin: 22px 0 12px;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 18px 0 8px;
 }
 .experience-card p {
-  font-size: 12px;
-  line-height: 1.8;
-  max-width: 240px;
-  color: #526f85;
+  font-size: 14px;
+  line-height: 1.57;
+  max-width: 260px;
+  color: var(--muted);
 }
 .experience-icon {
   display: flex;
@@ -1532,22 +1611,24 @@
   transform: rotate(-8deg);
 }
 .home-account-banner h2 {
-  font-size: 25px;
-  font-weight: 750;
-  line-height: 1.3;
-  margin-bottom: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
 }
 .home-account-banner .section-kicker {
   color: #bde9ff;
 }
 .home-account-banner p:not(.section-kicker) {
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.57;
   color: #d1e6f5;
 }
 .home-account-banner .ui-button {
   margin: 0 0 0 auto;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 .home-local-note {
   display: flex;
@@ -1563,13 +1644,13 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .experience-card h3 {
-    font-size: 21px;
+    font-size: 18px;
   }
   .home-account-banner {
     gap: 20px;
   }
   .home-account-banner h2 {
-    font-size: 21px;
+    font-size: 20px;
   }
   .account-banner-icon {
     display: none;
@@ -1589,13 +1670,15 @@
     padding: 33px 25px;
   }
   .home-hero h1 {
-    font-size: 42px;
-    letter-spacing: -1.5px;
-    margin-top: 20px;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+    margin-top: 14px;
+    line-height: 1.3;
   }
   .home-hero-copy p {
-    font-size: 13px;
-    max-width: 270px;
+    font-size: 14px;
+    line-height: 1.57;
+    max-width: 300px;
   }
   .hero-kicker {
     font-size: 8px;
@@ -2292,17 +2375,20 @@
   margin: 12px 0 28px;
 }
 .detail-topline h1 {
-  font-size: 38px;
-  line-height: 1.2;
-  font-weight: 800;
-  margin: 10px 0;
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 8px 0;
 }
 .detail-topline p {
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.57;
 }
 .detail-gallery {
   height: 360px;
@@ -2728,8 +2814,9 @@
   border-radius: 22px !important;
 }
 .operations-heading h1 {
-  font-size: 34px !important;
-  letter-spacing: -1px;
+  font-size: 32px !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .operations-heading p:first-child {
   font-size: 10px;
@@ -2760,8 +2847,10 @@
   border-radius: 24px;
 }
 .account-heading h1 {
-  font-size: 35px;
+  font-size: 32px;
+  font-weight: 700;
   line-height: 1.25;
+  letter-spacing: -0.02em;
   max-width: 670px;
   padding-top: 5px;
 }
@@ -2770,6 +2859,7 @@
 }
 .account-heading p {
   font-size: 14px;
+  line-height: 1.57;
 }
 .account-page aside nav {
   border: 1px solid var(--line);
@@ -3646,8 +3736,8 @@
 .lodging-rate-calendar { scroll-margin-top: 110px; }
 
 .lodging-detail-heading { display: flex; justify-content: space-between; align-items: start; gap: 24px; margin: 24px 0; }
-.lodging-detail-heading h1 { font-size: clamp(26px, 3.5vw, 42px); line-height: 1.2; font-weight: 800; letter-spacing: -1px; margin: 12px 0; max-width: 850px; }
-.lodging-detail-heading p { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.lodging-detail-heading h1 { font-size: 32px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; margin: 10px 0; max-width: 850px; }
+.lodging-detail-heading p { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; line-height: 1.57; }
 .lodging-detail-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border-radius: 24px; overflow: hidden; }
 .lodging-detail-gallery .lodging-card-photo { height: 340px; }
 .lodging-detail-photo-note { display: flex; align-items: center; gap: 8px; color: var(--muted); margin: 12px 0 24px; font-size: 13px; }

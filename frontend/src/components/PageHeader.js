@@ -1,6 +1,25 @@
 import { ArrowUpRight, Compass } from "lucide-react";
 import Link from "next/link";
 
+function formatHeaderTitle(title) {
+  if (typeof title !== "string") return title;
+  const trimmed = title.trim();
+  if (
+    trimmed === "Temukan tempat. Ciptakan cerita." ||
+    trimmed === "Temukan tempat. Ciptakan cerita"
+  ) {
+    return (
+      <>
+        <span>Temukan tempat.</span>{" "}
+        <span>
+          Ciptakan <span className="heading-accent">cerita.</span>
+        </span>
+      </>
+    );
+  }
+  return title;
+}
+
 export function PageHeader({
   eyebrow,
   title,
@@ -18,7 +37,7 @@ export function PageHeader({
           <Compass size={15} />
           {eyebrow || "WisataDaerah"}
         </span>
-        <h1>{title}</h1>
+        <h1>{formatHeaderTitle(title)}</h1>
         {description && <p>{description}</p>}
         {action && (
           <Link className="ui-button ui-button-white" href={action.href}>
