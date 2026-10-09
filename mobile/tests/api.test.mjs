@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiError, createPublicApi, destinationPath } from '../src/api.mjs';
+import {
+  ApiError,
+  createPublicApi,
+  destinationPath,
+  loginCustomer,
+  fetchCustomerProfile,
+  fetchCustomerOrders,
+  fetchCustomerOrderVouchers,
+  fetchGuestVouchers,
+} from '../src/api.mjs';
 
 const base = 'https://wisata.example.test/api/v1';
 const response = (data, status = 200) => ({ ok: status < 400, status, json: async () => data });
@@ -82,3 +91,94 @@ test('leaving a screen or changing search cancels its in-flight request', async 
   controller.abort();
   await assert.rejects(request, (error) => error.name === 'AbortError');
 });
+
+test('loginCustomer sends credentials and parses token with user profile', async () => {
+  let received;
+  const mockApi = createPublicApi(base, {
+    fetchImpl: async (url, options) => {
+      received = { url, options };
+      return response({
+        data: { id: 10, name: 'Sari Indah', email: 'sari@example.test' },
+        token: '1|test-auth-token-12345',
+        redirect_to: '/akun',
+      });
+    },
+  });
+
+  const res = await loginCustomer(mockApi, { email: 'Sari@Example.Test', password: 'secretpassword123' });
+  assert.equal(received.url, `${base}/login`);
+  assert.equal(received.options.method, 'POST');
+  assert.deepEqual(JSON.parse(received.options.body), { email: 'sari@example.test', password: 'secretpassword123' });
+  assert.equal(res.token, '1|test-auth-token-12345');
+  assert.equal(res.data.name, 'Sari Indah');
+
+  await assert.rejects(loginCustomer(mockApi, { email: '', password: '123' }), /wajib diisi/);
+});
+
+test('fetchCustomerProfile sends Authorization Bearer header', async () => {
+  let received;
+  const mockApi = createPublicApi(base, {
+    fetchImpl: async (url, options) => {
+      received = { url, options };
+      return response({ data: { id: 10, name: 'Sari Indah' } });
+    },
+  });
+
+  const res = await fetchCustomerProfile(mockApi, 'my-bearer-token');
+  assert.equal(received.url, `${base}/me`);
+  assert.equal(received.options.headers.Authorization, 'Bearer my-bearer-token');
+  assert.equal(res.data.name, 'Sari Indah');
+});
+
+test('fetchCustomerOrderVouchers requests vouchers with bearer token', async () => {
+  let received;
+  const mockApi = createPublicApi(base, {
+    fetchImpl: async (url, options) => {
+      received = { url, options };
+      return response({
+        data: {
+          order_id: 'ORD-20261009-ABC',
+          status: 'paid',
+          vouchers: [{ token: '111111111111111111111111111111111111111111111111', admissions: 2 }],
+        },
+      });
+    },
+  });
+
+  const res = await fetchCustomerOrderVouchers(mockApi, { orderId: 'ORD-20261009-ABC', token: 'user-token' });
+  assert.equal(received.url, `${base}/account/orders/ORD-20261009-ABC/vouchers`);
+  assert.equal(received.options.headers.Authorization, 'Bearer user-token');
+  assert.equal(res.data.vouchers.length, 1);
+});
+
+test('fetchGuestVouchers passes guest access token header', async () => {
+  let received;
+  const mockApi = createPublicApi(base, {
+    fetchImpl: async (url, options) => {
+      received = { url, options };
+      return response({
+        data: {
+          order_id: 'ORD-GUEST-99',
+          status: 'paid',
+          vouchers: [],
+        },
+      });
+    },
+  });
+
+  const guestToken = 'guest48charactertoken123456789012345678901234567';
+  await fetchGuestVouchers(mockApi, { orderId: 'ORD-GUEST-99', guestToken });
+  assert.equal(received.url, `${base}/guest/orders/ORD-GUEST-99/vouchers`);
+  assert.equal(received.options.headers['X-Guest-Access-Token'], guestToken);
+});
+
+test('HTTP 401 returns expired session error message', async () => {
+  const api = createPublicApi(base, { fetchImpl: async () => response({ message: 'Unauthenticated.' }, 401) });
+  await assert.rejects(api('/me', { token: 'bad-token' }), (error) => error.status === 401 && /Sesi masuk telah berakhir/.test(error.message));
+});
+
+test('HTTP 422 returns server validation error message', async () => {
+  const api = createPublicApi(base, { fetchImpl: async () => response({ message: 'Kredensial tidak valid.' }, 422) });
+  await assert.rejects(api('/login', { method: 'POST', body: {} }), (error) => error.status === 422 && error.message === 'Kredensial tidak valid.');
+});
+

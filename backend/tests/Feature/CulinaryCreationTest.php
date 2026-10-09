@@ -56,7 +56,7 @@ class CulinaryCreationTest extends TestCase
         foreach ([['name' => ''], ['latitude' => -6, 'longitude' => null], ['latitude' => -100, 'longitude' => 106], ['image_url' => 'https://untrusted.test/photo.jpg']] as $extra) {
             $this->postJson($url, $this->data($extra), $header)->assertUnprocessable();
         }
-        $this->assertDatabaseCount('culinary_places',0);
-        $this->assertDatabaseCount('audit_logs',0);
+        $this->assertDatabaseCount('culinary_places', 0);
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 }

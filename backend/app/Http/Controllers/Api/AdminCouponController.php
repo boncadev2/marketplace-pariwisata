@@ -26,7 +26,7 @@ class AdminCouponController extends Controller
             $search = '%'.$request->input('search').'%';
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', $search)
-                  ->orWhere('name', 'like', $search);
+                    ->orWhere('name', 'like', $search);
             });
         }
 

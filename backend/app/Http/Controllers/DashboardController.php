@@ -14,7 +14,7 @@ class DashboardController extends Controller
             'data' => [
                 'total_orders' => 100,
                 'total_revenue' => 5000000,
-            ]
+            ],
         ]);
     }
 }

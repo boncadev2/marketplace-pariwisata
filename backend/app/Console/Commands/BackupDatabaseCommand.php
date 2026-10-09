@@ -25,7 +25,7 @@ class BackupDatabaseCommand extends Command
 
         $timestamp = now()->format('Y-m-d-His');
         $compress = (bool) $this->option('compress');
-        $filename = "backup-{$timestamp}.sql" . ($compress ? '.gz' : '');
+        $filename = "backup-{$timestamp}.sql".($compress ? '.gz' : '');
         $filepath = "{$backupDir}/{$filename}";
 
         $startTime = microtime(true);
@@ -54,7 +54,7 @@ class BackupDatabaseCommand extends Command
         };
 
         $write("-- Wisata Daerah Database Backup\n");
-        $write("-- Created at: " . now()->toIso8601String() . "\n");
+        $write('-- Created at: '.now()->toIso8601String()."\n");
         $write("-- Connection: {$connection}\n");
         $write("-- Tables count: {$totalTables}\n\n");
 
@@ -76,7 +76,7 @@ class BackupDatabaseCommand extends Command
                 $createRow = DB::selectOne("SELECT sql FROM sqlite_master WHERE type='table' AND name = ?", [$table]);
                 if ($createRow && ! empty($createRow->sql)) {
                     $write("DROP TABLE IF EXISTS `{$table}`;\n");
-                    $write($createRow->sql . ";\n\n");
+                    $write($createRow->sql.";\n\n");
                 }
             } else {
                 $createRow = DB::selectOne("SHOW CREATE TABLE `{$table}`");
@@ -85,13 +85,13 @@ class BackupDatabaseCommand extends Command
                     $sql = $createRow->$prop ?? null;
                     if ($sql) {
                         $write("DROP TABLE IF EXISTS `{$table}`;\n");
-                        $write($sql . ";\n\n");
+                        $write($sql.";\n\n");
                     }
                 }
             }
 
             // Dump table rows
-            DB::table($table)->orderBy(DB::raw('1'))->chunk(500, function ($rows) use ($table, $write, $connection): void {
+            DB::table($table)->orderBy(DB::raw('1'))->chunk(500, function ($rows) use ($table, $write): void {
                 if ($rows->isEmpty()) {
                     return;
                 }
@@ -109,11 +109,11 @@ class BackupDatabaseCommand extends Command
                             $values[] = (string) $val;
                         } else {
                             $escaped = addslashes((string) $val);
-                            $escaped = str_replace(["\r", "\n"], ["\\r", "\\n"], $escaped);
+                            $escaped = str_replace(["\r", "\n"], ['\\r', '\\n'], $escaped);
                             $values[] = "'{$escaped}'";
                         }
                     }
-                    $write("INSERT INTO `{$table}` ({$colsSql}) VALUES (" . implode(', ', $values) . ");\n");
+                    $write("INSERT INTO `{$table}` ({$colsSql}) VALUES (".implode(', ', $values).");\n");
                 }
             });
 

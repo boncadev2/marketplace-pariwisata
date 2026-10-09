@@ -52,6 +52,6 @@ class PlaceCatalogSortingTest extends TestCase
         $first = $this->getJson('/api/v1/culinary/places?sort=price_asc')->assertOk()->assertJsonCount(12, 'data.data')->json('data.data');
         $last = $this->getJson('/api/v1/culinary/places?sort=price_asc&page=2')->assertOk()->assertJsonCount(1, 'data.data')->json('data.data');
         $this->assertSame([], array_values(array_intersect(array_column($first, 'id'), array_column($last, 'id'))));
-        $this->assertEquals(22000,$last[0]['starting_price']);
+        $this->assertEquals(22000, $last[0]['starting_price']);
     }
 }

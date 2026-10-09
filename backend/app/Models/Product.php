@@ -6,6 +6,7 @@ use App\Services\PublicCatalogCache;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,7 +46,7 @@ class Product extends Model
         return $this->hasOne(TourPackage::class);
     }
 
-    public function destination(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function destination(): BelongsTo
     {
         return $this->belongsTo(Destination::class);
     }

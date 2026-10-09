@@ -80,6 +80,6 @@ class CulinaryPhotoTest extends TestCase
         $place->save();
         Storage::disk('local')->put($place->photo_path, 'private');
         $this->get('/api/v1/culinary/places/'.$place->id.'/photo')->assertNotFound();
-        $this->getJson('/api/v1/culinary/places/'.$place->id)->assertJsonPath('data.image_url',null);
+        $this->getJson('/api/v1/culinary/places/'.$place->id)->assertJsonPath('data.image_url', null);
     }
 }

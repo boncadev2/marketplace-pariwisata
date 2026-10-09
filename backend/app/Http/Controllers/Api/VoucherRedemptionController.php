@@ -30,7 +30,7 @@ class VoucherRedemptionController extends Controller
         $voucher = $vouchers->redeem(
             $data['token'],
             $request->user(),
-            !empty($data['override_reason']) ? $data['override_reason'] : null
+            ! empty($data['override_reason']) ? $data['override_reason'] : null
         );
 
         return response()->json([

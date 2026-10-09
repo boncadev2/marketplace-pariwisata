@@ -56,4 +56,29 @@ class AuthenticationTest extends TestCase
         User::factory()->create(['email' => 'member@example.test', 'password' => 'password-yang-salah']);
         $this->postJson('/api/v1/login', ['email' => 'member@example.test', 'password' => 'wrong-password'])->assertUnprocessable()->assertJson(['message' => 'Kredensial tidak valid.']);
     }
+
+    public function test_login_issues_bearer_token_for_api_clients_and_authenticates_protected_endpoints(): void
+    {
+        $user = User::factory()->create(['email' => 'mobile.user@example.test', 'password' => 'mobile-secret-2026']);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => 'mobile.user@example.test',
+            'password' => 'mobile-secret-2026',
+        ])->assertOk();
+
+        $token = $response->json('token');
+        $this->assertIsString($token);
+        $this->assertNotEmpty($token);
+
+        // Access protected endpoint using Bearer token
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.email', 'mobile.user@example.test');
+
+        // Logout using Bearer token
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/v1/logout')
+            ->assertNoContent();
+    }
 }

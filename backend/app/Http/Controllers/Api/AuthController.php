@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -33,19 +34,34 @@ class AuthController extends Controller
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             return response()->json(['message' => 'Kredensial tidak valid.'], 422);
         }
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            Auth::guard('web')->login($user);
+            $request->session()->regenerate();
+        }
 
         $operational = $user->platform_role === 'super_admin' || $user->partnerMemberships()->where('is_active', true)->exists();
 
-        return response()->json(['data' => $user, 'redirect_to' => $operational ? '/dashboard' : '/akun'])->header('Cache-Control', 'private, no-store');
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'data' => $user,
+            'token' => $token,
+            'redirect_to' => $operational ? '/dashboard' : '/akun',
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     public function logout(Request $request): JsonResponse
     {
+        $token = $request->user()?->currentAccessToken();
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+        }
+
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json(status: 204);
     }

@@ -80,4 +80,3 @@ class ReviewTest extends TestCase
         $this->assertDatabaseMissing('reviews', ['id' => $review->id]);
     }
 }
-

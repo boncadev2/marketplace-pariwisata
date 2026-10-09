@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
             $frontendUrl = rtrim((string) config('services.frontend_url', env('FRONTEND_URL', 'http://localhost:8080')), '/');
+
             return "{$frontendUrl}/reset-password?token={$token}&email=".urlencode($notifiable->getEmailForPasswordReset());
         });
 

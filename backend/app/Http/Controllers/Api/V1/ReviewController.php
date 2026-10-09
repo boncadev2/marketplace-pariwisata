@@ -120,8 +120,8 @@ class ReviewController extends Controller
             $search = '%'.$request->input('search').'%';
             $query->where(function ($q) use ($search) {
                 $q->where('comment', 'like', $search)
-                  ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', $search)->orWhere('email', 'like', $search))
-                  ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', $search));
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', $search)->orWhere('email', 'like', $search))
+                    ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', $search));
             });
         }
 
@@ -151,4 +151,3 @@ class ReviewController extends Controller
         return response()->json(null, 204);
     }
 }
-

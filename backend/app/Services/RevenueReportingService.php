@@ -14,14 +14,14 @@ class RevenueReportingService
     {
         $gatewayAccount = LedgerAccount::where('code', 'asset_payment_gateway')->first();
         $commissionAccount = LedgerAccount::where('code', 'revenue_commission')->first();
-        
+
         $partnerAccounts = LedgerAccount::where('type', 'liability')
             ->where('code', 'like', 'liability_partner_%');
-        
+
         if ($partnerId) {
             $partnerAccounts->where('partner_id', $partnerId);
         }
-        
+
         $partnerAccountIds = $partnerAccounts->pluck('id');
 
         // Gross Booking Value & Received Payments
@@ -45,10 +45,10 @@ class RevenueReportingService
             $receivedPayments = (int) $receivedQuery->sum('amount');
             $refunds = (int) $refundQuery->sum('amount');
         }
-        
+
         // Platform Revenue
         $platformRevenue = 0;
-        if ($commissionAccount && !$partnerId) {
+        if ($commissionAccount && ! $partnerId) {
             $revCreditQuery = JournalTransaction::where('ledger_account_id', $commissionAccount->id)
                 ->where('type', 'credit');
             $revDebitQuery = JournalTransaction::where('ledger_account_id', $commissionAccount->id)
@@ -75,7 +75,7 @@ class RevenueReportingService
         $payoutDebits = (int) JournalTransaction::whereIn('ledger_account_id', $partnerAccountIds)
             ->where('type', 'debit')
             ->sum('amount');
-        
+
         $fundsReadyForPayout = max(0, $payoutCredits - $payoutDebits);
 
         return [
@@ -96,7 +96,7 @@ class RevenueReportingService
         $trends = [];
         $indonesianMonths = [
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
-            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
         ];
 
         for ($i = $months - 1; $i >= 0; $i--) {
@@ -104,7 +104,7 @@ class RevenueReportingService
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
             $monthKey = $date->format('Y-m');
-            $label = ($indonesianMonths[(int) $date->format('n')] ?? $date->format('M')) . ' ' . $date->format('Y');
+            $label = ($indonesianMonths[(int) $date->format('n')] ?? $date->format('M')).' '.$date->format('Y');
 
             $gbv = 0;
             $revenue = 0;
@@ -122,7 +122,7 @@ class RevenueReportingService
                     ->sum('amount');
             }
 
-            if ($commissionAccount && !$partnerId) {
+            if ($commissionAccount && ! $partnerId) {
                 $revCredit = (int) JournalTransaction::where('ledger_account_id', $commissionAccount->id)
                     ->where('type', 'credit')
                     ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
@@ -217,7 +217,7 @@ class RevenueReportingService
             $commission = (int) $order->items->sum('commission_amount');
             $firstItem = $order->items->first();
             $category = $firstItem?->product?->type ?: 'general';
-            
+
             return [
                 'id' => $order->id,
                 'public_id' => $order->public_id,
@@ -254,7 +254,7 @@ class RevenueReportingService
 
         $output = fopen('php://temp', 'r+');
         // UTF-8 BOM
-        fputs($output, "\xEF\xBB\xBF");
+        fwrite($output, "\xEF\xBB\xBF");
 
         fputcsv($output, [
             'ID Pesanan',

@@ -98,7 +98,7 @@ class RevenueReportingTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('attachment;', $response->headers->get('Content-Disposition'));
-        
+
         $content = $response->getContent();
         $this->assertStringContainsString('ID Pesanan', $content);
         $this->assertStringContainsString('Budi Santoso', $content);

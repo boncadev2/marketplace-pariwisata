@@ -118,3 +118,29 @@ body {
     display: none;
   }
 }
+
+/* QR Scanner Laser Animation */
+@keyframes qrLaserMove {
+  0% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.8;
+  }
+}
+
+.qr-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #10b981 30%, #34d399 50%, #10b981 70%, transparent 100%);
+  box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.75);
+  animation: qrLaserMove 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

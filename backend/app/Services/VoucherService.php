@@ -101,7 +101,7 @@ class VoucherService
             abort_unless($voucher->status === 'active', 409, $voucher->status === 'redeemed' ? 'Voucher ini sudah pernah divalidasi dan digunakan.' : 'Status voucher tidak aktif.');
 
             $isToday = $voucher->service_date->toDateString() === now('Asia/Jakarta')->toDateString();
-            abort_unless($override || $isToday, 409, 'Tanggal kunjungan voucher (' . $voucher->service_date->format('d/m/Y') . ') tidak sesuai dengan hari ini (' . now('Asia/Jakarta')->format('d/m/Y') . '). Hubungi administrator untuk persetujuan validasi di luar jadwal.');
+            abort_unless($override || $isToday, 409, 'Tanggal kunjungan voucher ('.$voucher->service_date->format('d/m/Y').') tidak sesuai dengan hari ini ('.now('Asia/Jakarta')->format('d/m/Y').'). Hubungi administrator untuk persetujuan validasi di luar jadwal.');
 
             $voucher->update([
                 'status' => 'redeemed',

@@ -12,7 +12,7 @@ class CommissionService
      * Calculates the commission amount for a given product and total price.
      * Uses documented Rupiah rounding (round to nearest whole number, half up).
      */
-    public function calculate(Product $product, int $totalAmount, CarbonImmutable $date = null): array
+    public function calculate(Product $product, int $totalAmount, ?CarbonImmutable $date = null): array
     {
         $date = $date ?? CarbonImmutable::now();
 
@@ -22,11 +22,11 @@ class CommissionService
                 $query->where('partner_id', $product->partner_id)
                     ->orWhereNull('partner_id');
             })
-            ->where(function ($query) use ($product) {
+            ->where(function ($query) {
                 // Assuming Product has a category or type, for now we match null as fallback.
                 // If Product has a category relationship, we'd check that.
                 // Let's use null matching for general fallback.
-                $query->where('product_type', 'default')->orWhereNull('product_type'); 
+                $query->where('product_type', 'default')->orWhereNull('product_type');
             })
             ->where('effective_from', '<=', $date)
             ->where(function ($query) use ($date) {
@@ -37,7 +37,7 @@ class CommissionService
             ->orderBy('product_type', 'desc')
             ->first();
 
-        if (!$rule) {
+        if (! $rule) {
             return [
                 'commission_rule_id' => null,
                 'commission_amount' => 0,
@@ -46,7 +46,7 @@ class CommissionService
 
         $percentageAmount = ($totalAmount * (float) $rule->percentage_rate) / 100;
         $totalCommission = $percentageAmount + $rule->fixed_amount;
-        
+
         // Documented Rupiah rounding (round to nearest whole Rupiah)
         $roundedCommission = (int) round($totalCommission, 0, PHP_ROUND_HALF_UP);
 

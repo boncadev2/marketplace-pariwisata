@@ -93,7 +93,7 @@ class CulinaryScheduleTest extends TestCase
         }
         $data = $this->postJson($url, $this->payload())->json('data');
         $this->patchJson($url.'/'.$data['id'], $this->payload(['revision' => $data['revision'], 'is_active' => false]))->assertOk();
-        $this->getJson('/api/v1/culinary/places/'.$place->id.'/slots?date=2026-10-03')->assertJsonCount(0,'data.data');
-        $this->getJson($url.'?date=2026-10-03')->assertJsonCount(1,'data.data');
+        $this->getJson('/api/v1/culinary/places/'.$place->id.'/slots?date=2026-10-03')->assertJsonCount(0, 'data.data');
+        $this->getJson($url.'?date=2026-10-03')->assertJsonCount(1, 'data.data');
     }
 }

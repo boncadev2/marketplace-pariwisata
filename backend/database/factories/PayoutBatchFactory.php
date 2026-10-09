@@ -10,7 +10,7 @@ class PayoutBatchFactory extends Factory
     public function definition(): array
     {
         return [
-            'batch_number' => 'PO-' . strtoupper(Str::random(10)),
+            'batch_number' => 'PO-'.strtoupper(Str::random(10)),
             'maker_id' => 1,
             'provider' => 'bank_transfer',
             'status' => 'requested',

@@ -180,4 +180,3 @@ class PayoutTest extends TestCase
             ->assertJsonStructure(['data', 'current_page', 'total']);
     }
 }
-

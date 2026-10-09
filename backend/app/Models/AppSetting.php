@@ -118,7 +118,7 @@ class AppSetting extends Model
     /**
      * Save or update multiple settings and clear cache.
      *
-     * @param array<string, mixed> $settings
+     * @param  array<string, mixed>  $settings
      */
     public static function saveMany(array $settings): void
     {

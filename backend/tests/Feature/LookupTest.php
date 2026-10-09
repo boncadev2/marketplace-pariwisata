@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Region;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class LookupTest extends TestCase
 
     public function test_lookup_returns_active_promos(): void
     {
-        \App\Models\Coupon::create([
+        Coupon::create([
             'code' => 'TEST10',
             'name' => 'Diskon 10%',
             'description' => 'Test',
@@ -34,7 +35,7 @@ class LookupTest extends TestCase
             'minimum_spend' => '10000.00',
             'is_active' => true,
         ]);
-        \App\Models\Coupon::create([
+        Coupon::create([
             'code' => 'INACTIVE',
             'name' => 'Nonaktif',
             'description' => 'Test',

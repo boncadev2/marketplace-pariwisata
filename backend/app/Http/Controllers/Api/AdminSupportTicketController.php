@@ -32,8 +32,8 @@ class AdminSupportTicketController extends Controller
             $search = '%'.$request->input('search').'%';
             $query->where(function ($q) use ($search) {
                 $q->whereHas('user', fn ($uq) => $uq->where('name', 'like', $search)->orWhere('email', 'like', $search))
-                  ->orWhereHas('order', fn ($oq) => $oq->where('public_id', 'like', $search))
-                  ->orWhere('id', 'like', $search);
+                    ->orWhereHas('order', fn ($oq) => $oq->where('public_id', 'like', $search))
+                    ->orWhere('id', 'like', $search);
             });
         }
 

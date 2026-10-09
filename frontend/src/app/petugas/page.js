@@ -42,6 +42,9 @@ function extractVoucherToken(text) {
 
 function playBeep() {
   try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate([100, 50, 100]);
+    }
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();

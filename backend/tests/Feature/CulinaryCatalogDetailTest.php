@@ -53,6 +53,6 @@ class CulinaryCatalogDetailTest extends TestCase
     public function test_lodging_detail_exposes_address_and_coordinates(): void
     {
         $room = RoomType::factory()->create(['location' => 'Alamat lengkap homestay pengujian', 'latitude' => -6.25, 'longitude' => 106.8]);
-        $this->getJson('/api/v1/lodging/rooms/'.$room->id)->assertOk()->assertJsonPath('data.location', $room->location)->assertJsonPath('data.latitude', '-6.2500000')->assertJsonPath('data.longitude','106.8000000');
+        $this->getJson('/api/v1/lodging/rooms/'.$room->id)->assertOk()->assertJsonPath('data.location', $room->location)->assertJsonPath('data.latitude', '-6.2500000')->assertJsonPath('data.longitude', '106.8000000');
     }
 }

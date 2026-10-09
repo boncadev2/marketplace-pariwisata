@@ -7,6 +7,6 @@ class VoucherGeneratorService
     public function generateVoucher($orderId)
     {
         // Generate voucher code
-        return "VOUCHER-" . $orderId . "-" . strtoupper(uniqid());
+        return 'VOUCHER-'.$orderId.'-'.strtoupper(uniqid());
     }
 }

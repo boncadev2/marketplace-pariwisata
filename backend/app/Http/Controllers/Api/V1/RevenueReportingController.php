@@ -32,7 +32,7 @@ class RevenueReportingController extends Controller
         $endDate = $request->query('end_date');
 
         $csv = $this->reportingService->exportCsv($partnerId, $startDate, $endDate);
-        $filename = 'laporan-pendapatan-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'laporan-pendapatan-'.now()->format('Y-m-d').'.csv';
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
