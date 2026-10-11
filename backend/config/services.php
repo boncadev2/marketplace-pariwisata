@@ -18,8 +18,9 @@ return [
         'requests_per_minute' => env('PAYMENT_RECONCILIATION_REQUESTS_PER_MINUTE', 30),
     ],
     'whatsapp' => [
-        'driver' => env('WHATSAPP_GATEWAY_DRIVER', 'mock'),
-        'token' => env('WHATSAPP_API_TOKEN'),
+        'driver' => env('WHATSAPP_GATEWAY_DRIVER', 'gadstudio'),
+        'url' => env('WHATSAPP_API_URL', 'https://wa.gadstudio.cloud'),
+        'token' => env('WHATSAPP_API_TOKEN', env('WHATSAPP_TOKEN', 'wagateway_a508889ccf9d4cdb81022f3a05b0a61b')),
     ],
     'payout' => [
         'driver' => env('PAYOUT_DRIVER', 'unconfigured'),

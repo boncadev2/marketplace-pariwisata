@@ -44,7 +44,7 @@ class WhatsAppService
         $quantity = $item?->quantity ?? 1;
         $visitDate = $order->policy_snapshot['visit_date'] ?? '-';
         $totalFormatted = number_format($order->total, 0, ',', '.');
-        $baseUrl = config('app.url', 'https://wisatadaerah.id');
+        $baseUrl = rtrim((string) (config('services.frontend_url') ?: config('app.url', 'https://wisatadaerah.id')), '/');
         $voucherUrl = "{$baseUrl}/voucher?ref={$order->public_id}";
 
         $message = "Halo *{$order->customer_name}*,\n\n";
@@ -66,7 +66,7 @@ class WhatsAppService
     }
 
     /**
-     * Dispatch WhatsApp message via configured driver (mock, log, or fonnte).
+     * Dispatch WhatsApp message via configured driver (gadstudio, fonnte, or mock).
      */
     public function send(string $phone, string $message, ?Order $order = null): array
     {
@@ -75,8 +75,35 @@ class WhatsAppService
             throw new \InvalidArgumentException('Nomor WhatsApp tidak valid. Format yang didukung: 08xxxxxxxxxx atau 628xxxxxxxxxx.');
         }
 
-        $driver = config('services.whatsapp.driver', env('WHATSAPP_GATEWAY_DRIVER', 'mock'));
+        $driver = config('services.whatsapp.driver', env('WHATSAPP_GATEWAY_DRIVER', 'gadstudio'));
         $token = config('services.whatsapp.token', env('WHATSAPP_API_TOKEN', ''));
+        $baseUrl = config('services.whatsapp.url', env('WHATSAPP_API_URL', 'https://wa.gadstudio.cloud'));
+
+        if (in_array($driver, ['gadstudio', 'custom', 'generic', 'wagateway'], true) && ! empty($token)) {
+            try {
+                $endpoint = rtrim((string) $baseUrl, '/').'/api/send-text';
+                $response = Http::timeout(10)->withHeaders([
+                    'x-api-key' => $token,
+                    'Content-Type' => 'application/json',
+                ])->post($endpoint, [
+                    'to' => $cleanPhone,
+                    'message' => $message,
+                ]);
+
+                $data = $response->json();
+                $isSuccess = $response->successful() && (($data['status'] ?? false) === true || ($data['success'] ?? false) === true);
+                Log::info("WhatsApp sent via GADStudio Gateway to {$cleanPhone}", ['response' => $data]);
+
+                return [
+                    'success' => $isSuccess,
+                    'driver' => 'gadstudio',
+                    'phone' => $cleanPhone,
+                    'response' => $data,
+                ];
+            } catch (\Throwable $e) {
+                Log::error("Failed to send WhatsApp via GADStudio Gateway to {$cleanPhone}: {$e->getMessage()}");
+            }
+        }
 
         if ($driver === 'fonnte' && ! empty($token)) {
             try {

@@ -125,4 +125,35 @@ class WhatsAppNotificationTest extends TestCase
             'phone' => '081298765432',
         ])->assertOk()->assertJsonPath('data.phone', '6281298765432');
     }
+
+    public function test_whatsapp_service_dispatches_via_gadstudio_driver(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'https://wa.gadstudio.cloud/api/send-text' => \Illuminate\Support\Facades\Http::response([
+                'status' => true,
+                'message' => 'Message queued and sent successfully',
+                'data' => ['id' => '123'],
+            ], 200),
+        ]);
+
+        config([
+            'services.whatsapp.driver' => 'gadstudio',
+            'services.whatsapp.url' => 'https://wa.gadstudio.cloud',
+            'services.whatsapp.token' => 'wagateway_test_token',
+        ]);
+
+        $service = new WhatsAppService;
+        $result = $service->send('085271524200', 'Halo! Tes pesan.');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('gadstudio', $result['driver']);
+        $this->assertSame('6285271524200', $result['phone']);
+
+        \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return $request->url() === 'https://wa.gadstudio.cloud/api/send-text'
+                && $request->hasHeader('x-api-key', 'wagateway_test_token')
+                && $request['to'] === '6285271524200'
+                && $request['message'] === 'Halo! Tes pesan.';
+        });
+    }
 }

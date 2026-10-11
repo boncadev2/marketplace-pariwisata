@@ -61,6 +61,20 @@ class ProcessPaymentWebhook implements ShouldQueue
                 app(VoucherService::class)->issue($order);
                 app(TransactionOutbox::class)->record($order, 'confirmation', 'paid', 'Status pembayaran: berhasil.');
                 app(TransactionOutbox::class)->record($order, 'voucher', 'issued', 'Gunakan nomor pesanan dan kode akses yang disimpan saat checkout.');
+
+                try {
+                    $phone = $order->policy_snapshot['customer_phone'] ?? null;
+                    if ($phone) {
+                        $whatsApp = app(\App\Services\WhatsAppService::class);
+                        $cleanPhone = $whatsApp->formatPhone($phone);
+                        if ($cleanPhone) {
+                            $message = $whatsApp->buildVoucherMessage($order);
+                            $whatsApp->send($cleanPhone, $message, $order);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Auto WhatsApp dispatch failed for order {$order->public_id}: {$e->getMessage()}");
+                }
             }
         }, 3);
     }
